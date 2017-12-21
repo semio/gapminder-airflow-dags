@@ -62,7 +62,7 @@ def sub_dag():
                                dag=subdag,
                                allowed_states=['success', 'failed'],
                                external_dag_id=dep.replace('/', '_'),
-                               external_task_id='git_push')
+                               external_task_id='validate')
         dep_tasks.append(t)
 
     return subdag

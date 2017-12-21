@@ -34,8 +34,9 @@ class RunETLOperator(BashOperator):
         # TODO: think about how to handle datasets_dir here
         bash_command = '''\
         set -eu
+        export DATASETS_DIR={{ params.datasets_dir }}
         cd {{ params.dataset }}/etl/scripts/
-        python etl.py {{ params.datasets_dir }}
+        python etl.py
         '''
         super(RunETLOperator, self).__init__(bash_command=bash_command,
                                              params={'dataset': dataset,
