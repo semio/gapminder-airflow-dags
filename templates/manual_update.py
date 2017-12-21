@@ -37,9 +37,9 @@ dag = DAG(dag_id, default_args=default_args,
           schedule_interval='@daily')
 
 
+
 def get_time_delta(n):
-    delta = n - datetime(n.year, n.month, n.day)
-    return delta
+    return datetime(n.year, n.month, n.day, 0, 0, 0)
 
 
 dependency_task = ExternalTaskSensor(task_id='update_datasets', dag=dag,

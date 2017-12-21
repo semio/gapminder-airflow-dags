@@ -49,8 +49,7 @@ def sub_dag():
     subdag = DAG(sub_dag_id, default_args=default_args, schedule_interval='@once')
 
     def get_time_delta(n):
-        delta = n - datetime(n.year, n.month, n.day)
-        return delta
+        return datetime(n.year, n.month, n.day, 0, 0, 0)
 
     dep_tasks = []
 
