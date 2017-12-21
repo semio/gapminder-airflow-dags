@@ -36,9 +36,16 @@ sub_dag_id = dag_id + '.' + 'dependency_check'
 dag = DAG(dag_id, default_args=default_args,
           schedule_interval='@daily')
 
+
+def get_time_delta(n):
+    delta = n - datetime(n.year, n.month, n.day)
+    return delta
+
+
 dependency_task = ExternalTaskSensor(task_id='update_datasets', dag=dag,
                                      external_dag_id='update_all_datasets',
-                                     external_task_id='update_all_dataset')
+                                     external_task_id='update_all_dataset',
+                                     execution_date_fn=get_time_delta)
 
 validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
                                        dataset=out_dir)

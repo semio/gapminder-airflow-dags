@@ -48,11 +48,16 @@ dag = DAG(dag_id, default_args=default_args,
 def sub_dag():
     subdag = DAG(sub_dag_id, default_args=default_args, schedule_interval='@once')
 
+    def get_time_delta(n):
+        delta = n - datetime(n.year, n.month, n.day)
+        return delta
+
     dep_tasks = []
 
     update_datasets = ExternalTaskSensor(task_id='update_datasets', dag=subdag,
                                          external_dag_id='update_all_datasets',
-                                         external_task_id='update_all_dataset')
+                                         external_task_id='update_all_dataset',
+                                         execution_date_fn=get_time_delta)
     for dep in depends_on:
         t = ExternalTaskSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
                                dag=subdag,
