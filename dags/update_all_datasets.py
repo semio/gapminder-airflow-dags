@@ -43,8 +43,6 @@ dag = DAG('update_all_datasets',
           schedule_interval='@daily')
 
 gitpull_template = '''\
-set -eu
-
 DIR={{ params.datasetpath }}
 
 cd $DIR/open-numbers
