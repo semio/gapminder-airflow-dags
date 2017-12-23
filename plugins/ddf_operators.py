@@ -82,6 +82,10 @@ class ValidateDatasetOperator(BashOperator):
         set -eu
         cd {{ params.dataset }}
         validate-ddf ./
+        if [ `ls | grep validation*.log | wc -c` -ne 0 ]
+        then
+            exit 1
+        fi
         '''
         super(ValidateDatasetOperator, self).__init__(bash_command=bash_command,
                                                       params={'dataset': dataset},
