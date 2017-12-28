@@ -150,7 +150,7 @@ def refresh_dags(**context):
 
         dag_name = dataset.replace('/', '_')
         dag_path = osp.join(airflow_home, 'dags', dag_name)
-        now = datetime.utcnow() - timedelta(days=1)
+        now = datetime.utcnow() - timedelta(days=1) + timedelta(minutes=10)
         dt = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
         with open(dag_path+'.py', 'w') as f:
             f.write(template.render(name=dag_name,
