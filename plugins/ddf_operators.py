@@ -65,7 +65,7 @@ class GitPushOperator(BashOperator):
         if [[ $(git diff --name-only | grep -v 'datapackage.json' | head -c1 | wc -c) -ne 0 ]]; then
             git add .
             git commit -m "auto generated dataset"
-            # git push -u origin
+            git push -u origin
         else
             echo "nothing to push"
             git reset --hard
