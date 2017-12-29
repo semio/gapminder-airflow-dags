@@ -4,6 +4,7 @@
 
 import os.path as osp
 from datetime import datetime, timedelta
+from functools import partial
 
 from airflow import DAG
 from airflow.models import Variable
@@ -48,8 +49,8 @@ dag = DAG(dag_id, default_args=default_args,
 def sub_dag():
     subdag = DAG(sub_dag_id, default_args=default_args, schedule_interval='@once')
 
-    def get_time_delta(n):
-        return datetime(n.year, n.month, n.day, 0, 0, 0)
+    def get_time_delta(n, h=0, m=0):
+        return datetime(n.year, n.month, n.day, h, m, 0)
 
     dep_tasks = []
 
@@ -63,7 +64,7 @@ def sub_dag():
                                allowed_states=['success', 'failed'],
                                external_dag_id=dep.replace('/', '_'),
                                external_task_id='validate',
-                               execution_date_fn=get_time_delta)
+                               execution_date_fn=partial(get_time_delta, m=10))
         dep_tasks.append(t)
 
     return subdag
