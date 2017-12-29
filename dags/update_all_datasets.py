@@ -88,7 +88,8 @@ def add_remove_datasets():
         if not osp.exists(path):
             logger.info('cloning dataset: {}'.format(record['name']))
             to_add.append(record['name'])
-            os.system('git clone {} {}'.format(record['git_url'], path))
+            os.system('git clone {} {}'.format(record['git_url'].replace('git://', 'git+ssh://'),
+                                               path))
 
     return {'current_datasets': current_datasets,
             'addition': to_add,
