@@ -39,7 +39,7 @@ dag = DAG(dag_id, default_args=default_args,
 
 dependency_task = ExternalTaskSensor(task_id='update_datasets', dag=dag,
                                      external_dag_id='update_all_datasets',
-                                     external_task_id='update_all_datasets')
+                                     external_task_id='update_datasets')
 
 validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
                                        pool='etl',
