@@ -20,7 +20,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
     # 'queue': 'bash_queue',
     # 'pool': 'backfill',
-    # 'priority_weight': 10,
+    'priority_weight': {{ priority }},
     # 'end_date': datetime(2016, 1, 1),
 }
 
@@ -37,17 +37,12 @@ dag = DAG(dag_id, default_args=default_args,
           schedule_interval='@daily')
 
 
-
-def get_time_delta(n):
-    return datetime(n.year, n.month, n.day, 0, 0, 0)
-
-
 dependency_task = ExternalTaskSensor(task_id='update_datasets', dag=dag,
                                      external_dag_id='update_all_datasets',
-                                     external_task_id='update_all_dataset',
-                                     execution_date_fn=get_time_delta)
+                                     external_task_id='update_all_datasets')
 
 validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
+                                       pool='etl',
                                        dataset=out_dir)
 
 # set dependencies

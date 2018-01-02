@@ -4,7 +4,6 @@
 
 import os.path as osp
 from datetime import datetime, timedelta
-from functools import partial
 
 from airflow import DAG
 from airflow.models import Variable
@@ -27,8 +26,8 @@ default_args = {
     'start_date': {{ datetime }},
     'retry_delay': timedelta(minutes=5),
     # 'queue': 'bash_queue',
-    # 'pool': 'backfill',
-    # 'priority_weight': 10,
+    'pool': 'etl',
+    'priority_weight': {{ priority }},
     # 'end_date': datetime(2016, 1, 1),
 }
 
@@ -47,24 +46,26 @@ dag = DAG(dag_id, default_args=default_args,
 
 
 def sub_dag():
-    subdag = DAG(sub_dag_id, default_args=default_args, schedule_interval='@once')
-
-    def get_time_delta(n, h=0, m=0):
-        return datetime(n.year, n.month, n.day, h, m, 0)
+    args = {
+        'owner': 'airflow',
+        'depends_on_past': False,
+        'start_date': {{ datetime }},
+        'retry_delay': timedelta(minutes=5),
+    }
+    subdag = DAG(sub_dag_id, default_args=args, schedule_interval='@once')
 
     dep_tasks = []
 
     update_datasets = ExternalTaskSensor(task_id='update_datasets', dag=subdag,
                                          external_dag_id='update_all_datasets',
-                                         external_task_id='update_all_dataset',
-                                         execution_date_fn=get_time_delta)
+                                         external_task_id='update_all_dataset')
+
     for dep in depends_on:
         t = ExternalTaskSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
                                dag=subdag,
                                allowed_states=['success', 'failed'],
                                external_dag_id=dep.replace('/', '_'),
-                               external_task_id='validate',
-                               execution_date_fn=partial(get_time_delta, m=10))
+                               external_task_id='validate')
         dep_tasks.append(t)
 
     return subdag
