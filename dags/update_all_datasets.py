@@ -30,7 +30,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
     # 'queue': 'bash_queue',
     # 'pool': 'backfill',
-    'priority_weight': 10,
+    'priority_weight': 99,
     # 'end_date': datetime(2016, 1, 1),
 }
 
@@ -103,11 +103,14 @@ def add_remove_datasets():
 
 def _get_recipe_file(path):
     sys.path.insert(0, path)
-    import etl
-    fn = etl.recipe_file
-    del sys.modules["etl"]
-    del etl
-    sys.path.pop(0)
+    try:
+        import etl
+        fn = etl.recipe_file
+    finally:
+        sys.path.remove(path)
+        if 'etl' in sys.modules:
+            del sys.modules["etl"]
+            del etl
     return fn
 
 
@@ -138,14 +141,18 @@ def refresh_dags(**context):
             except ModuleNotFoundError:
                 fn = ''
                 etl_type = 'manual'
+            except:
+                raise
 
         if etl_type == 'recipe':
             recipe = osp.join(etl_dir, fn)
+            logging.info("using recipe file: " + fn)
             chef = Chef.from_recipe(recipe)
             dependencies = set()
             for i in chef.ingredients:
                 if i.ddf_id is not None and i.ddf_id.startswith('open-numbers'):
                     dependencies.add(i.ddf_id)
+            logging.info("dependencies: {}".format(dependencies))
         else:
             dependencies = set()
 
@@ -157,10 +164,10 @@ def refresh_dags(**context):
             p = 1
         elif etl_type == 'python':
             template = env.get_template('etl_recipe.py')
-            p = 2
+            p = 10
         else:
             template = env.get_template('manual_update.py')
-            p = 5
+            p = 20
 
         dag_name = dataset.replace('/', '_')
         dag_path = osp.join(airflow_home, 'dags', dag_name)
