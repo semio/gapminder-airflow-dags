@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2017, 12, 30),
+    'start_date': datetime(2018, 1, 5),
     'retry_delay': timedelta(minutes=5),
     # 'queue': 'bash_queue',
     # 'pool': 'backfill',

@@ -42,7 +42,7 @@ sub_dag_id = dag_id + '.' + 'dependency_check'
 
 # now define the DAG
 dag = DAG(dag_id, default_args=default_args,
-          schedule_interval='@daily')
+          schedule_interval='0 10 * * *')
 
 
 def sub_dag():
@@ -60,12 +60,16 @@ def sub_dag():
                                          external_dag_id='update_all_datasets',
                                          external_task_id='update_all_dataset')
 
+    def get_dep_task_time(n):
+        return n + timedelta(minutes=10)
+
     for dep in depends_on:
         t = ExternalTaskSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
                                dag=subdag,
-                               allowed_states=['success', 'failed'],
+                               allowed_states=['success'],
                                external_dag_id=dep.replace('/', '_'),
-                               external_task_id='validate')
+                               external_task_id='validate',
+                               execution_date_fn=get_dep_task_time)
         dep_tasks.append(t)
 
     return subdag
