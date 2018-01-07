@@ -34,7 +34,7 @@ sub_dag_id = dag_id + '.' + 'dependency_check'
 
 # now define the DAG
 dag = DAG(dag_id, default_args=default_args,
-          schedule_interval='@daily')
+          schedule_interval='0 10 * * *')
 
 
 dependency_task = ExternalTaskSensor(task_id='update_datasets', dag=dag,
