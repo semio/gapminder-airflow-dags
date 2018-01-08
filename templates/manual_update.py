@@ -22,6 +22,7 @@ default_args = {
     # 'pool': 'backfill',
     'priority_weight': {{ priority }},
     # 'end_date': datetime(2016, 1, 1),
+    'poke_interval': 10
 }
 
 target_dataset = 'open-numbers/{{ name }}'
@@ -37,9 +38,17 @@ dag = DAG(dag_id, default_args=default_args,
           schedule_interval='10 0 * * *')
 
 
+def get_dep_task_time(n, minutes=0):
+    if minutes !=0:
+        return n.date() + timedelta(minutes=minutes)
+    timedel
+    return n.date()
+
+
 dependency_task = ExternalTaskSensor(task_id='update_datasets', dag=dag,
                                      external_dag_id='update_all_datasets',
-                                     external_task_id='update_all_dataset')
+                                     external_task_id='update_all_dataset',
+                                     execution_date_fn=get_dep_task_time)
 
 validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
                                        pool='etl',

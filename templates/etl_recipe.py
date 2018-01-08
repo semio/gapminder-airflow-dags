@@ -13,6 +13,8 @@ from airflow.operators import (GenerateDatapackageOperator,
 from airflow.operators.sensors import ExternalTaskSensor
 from airflow.operators.subdag_operator import SubDagOperator
 
+from functools import partial
+
 # steps:
 # 1. checkout the airflow branch
 # 2. run etl.py
@@ -29,6 +31,7 @@ default_args = {
     # 'pool': 'etl',
     'priority_weight': {{ priority }},
     # 'end_date': datetime(2016, 1, 1),
+    'poke_interval': 10
 }
 
 target_dataset = 'open-numbers/{{ name }}'
@@ -51,17 +54,21 @@ def sub_dag():
         'depends_on_past': False,
         'start_date': {{ datetime }},
         'retry_delay': timedelta(minutes=5),
+        'poke_interval': 10
     }
     subdag = DAG(sub_dag_id, default_args=args, schedule_interval='@once')
 
     dep_tasks = []
 
+    def get_dep_task_time(n, minutes=0):
+        if minutes !=0:
+            return n.date() + timedelta(minutes=minutes)
+        return n.date()
+
     update_datasets = ExternalTaskSensor(task_id='update_datasets', dag=subdag,
                                          external_dag_id='update_all_datasets',
-                                         external_task_id='update_all_dataset')
-
-    def get_dep_task_time(n):
-        return n + timedelta(minutes=10)
+                                         external_task_id='update_all_dataset',
+                                         execution_date_fn=get_dep_task_time)
 
     for dep in depends_on:
         t = ExternalTaskSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
@@ -69,7 +76,7 @@ def sub_dag():
                                allowed_states=['success'],
                                external_dag_id=dep.replace('/', '_'),
                                external_task_id='validate',
-                               execution_date_fn=get_dep_task_time)
+                               execution_date_fn=partial(get_dep_task_time, minutes=10))
         dep_tasks.append(t)
 
     return subdag
