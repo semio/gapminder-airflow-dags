@@ -61,9 +61,10 @@ def sub_dag():
     dep_tasks = []
 
     def get_dep_task_time(n, minutes=0):
+        newdate = datetime(n.year, n.month, n.day, 0, 0)
         if minutes !=0:
-            return n.date() + timedelta(minutes=minutes)
-        return n.date()
+            return newdate + timedelta(minutes=minutes)
+        return newdate
 
     update_datasets = ExternalTaskSensor(task_id='update_datasets', dag=subdag,
                                          external_dag_id='update_all_datasets',
