@@ -41,7 +41,6 @@ dag = DAG(dag_id, default_args=default_args,
 def get_dep_task_time(n, minutes=0):
     if minutes !=0:
         return n.date() + timedelta(minutes=minutes)
-    timedel
     return n.date()
 
 
