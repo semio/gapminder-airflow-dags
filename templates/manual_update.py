@@ -22,7 +22,7 @@ default_args = {
     # 'pool': 'backfill',
     'priority_weight': {{ priority }},
     # 'end_date': datetime(2016, 1, 1),
-    'poke_interval': 10
+    'poke_interval': 300
 }
 
 target_dataset = 'open-numbers/{{ name }}'

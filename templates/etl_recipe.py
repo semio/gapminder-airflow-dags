@@ -31,7 +31,7 @@ default_args = {
     # 'pool': 'etl',
     'priority_weight': {{ priority }},
     # 'end_date': datetime(2016, 1, 1),
-    'poke_interval': 10
+    'poke_interval': 300
 }
 
 target_dataset = 'open-numbers/{{ name }}'
@@ -54,7 +54,7 @@ def sub_dag():
         'depends_on_past': False,
         'start_date': {{ datetime }},
         'retry_delay': timedelta(minutes=5),
-        'poke_interval': 10
+        'poke_interval': 300
     }
     subdag = DAG(sub_dag_id, default_args=args, schedule_interval='@once')
 
