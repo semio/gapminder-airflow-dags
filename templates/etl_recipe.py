@@ -76,8 +76,7 @@ def sub_dag():
                                dag=subdag,
                                allowed_states=['success'],
                                external_dag_id=dep.replace('/', '_'),
-                               external_task_id='validate',
-                               execution_date_fn=partial(get_dep_task_time, minutes=10))
+                               external_task_id='validate')
         dep_tasks.append(t)
 
     return subdag
