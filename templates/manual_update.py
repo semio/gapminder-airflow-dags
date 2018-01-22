@@ -7,8 +7,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.models import Variable
-from airflow.operators import ValidateDatasetOperator
-from airflow.operators.sensors import ExternalTaskSensor
+from airflow.operators import ValidateDatasetOperator, DependencyDatasetSensor
 
 # steps:
 # validate the dataset and done.
@@ -45,10 +44,10 @@ def get_dep_task_time(n, minutes=0):
     return newdate
 
 
-dependency_task = ExternalTaskSensor(task_id='update_datasets', dag=dag,
-                                     external_dag_id='update_all_datasets',
-                                     external_task_id='update_all_dataset',
-                                     execution_date_fn=get_dep_task_time)
+dependency_task = DependencyDatasetSensor(task_id='update_datasets', dag=dag,
+                                          external_dag_id='update_all_datasets',
+                                          external_task_id='update_all_dataset',
+                                          execution_date_fn=get_dep_task_time)
 
 validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
                                        pool='etl',

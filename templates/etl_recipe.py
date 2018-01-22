@@ -8,9 +8,9 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators import (GenerateDatapackageOperator,
+                               DependencyDatasetSensor,
                                GitCheckoutOperator, GitPushOperator,
                                RunETLOperator, ValidateDatasetOperator)
-from airflow.operators.sensors import ExternalTaskSensor
 from airflow.operators.subdag_operator import SubDagOperator
 
 from functools import partial
@@ -66,17 +66,17 @@ def sub_dag():
             return newdate + timedelta(minutes=minutes)
         return newdate
 
-    update_datasets = ExternalTaskSensor(task_id='update_datasets', dag=subdag,
-                                         external_dag_id='update_all_datasets',
-                                         external_task_id='update_all_dataset',
-                                         execution_date_fn=get_dep_task_time)
+    update_datasets = DependencyDatasetSensor(task_id='update_datasets', dag=subdag,
+                                              external_dag_id='update_all_datasets',
+                                              external_task_id='update_all_dataset',
+                                              execution_date_fn=get_dep_task_time)
 
     for dep in depends_on:
-        t = ExternalTaskSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
-                               dag=subdag,
-                               allowed_states=['success'],
-                               external_dag_id=dep.replace('/', '_'),
-                               external_task_id='validate')
+        t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
+                                    dag=subdag,
+                                    allowed_states=['success'],
+                                    external_dag_id=dep.replace('/', '_'),
+                                    external_task_id='validate')
         dep_tasks.append(t)
 
     return subdag
