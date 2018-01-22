@@ -4,16 +4,20 @@ import json
 import logging
 import os.path as osp
 
+from datetime import datetime
 from pandas import to_datetime
 
-from airflow.exceptions import AirflowSkipException
+from airflow.exceptions import AirflowSkipException, AirflowException
 from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.operators.sensors import BaseSensorOperator
+from airflow.operators.sensors import BaseSensorOperator, ExternalTaskSensor
 from airflow.plugins_manager import AirflowPlugin
 from airflow.utils.decorators import apply_defaults
+from airflow.utils.db import provide_session
 from ddf_utils.datapackage import dump_json, get_datapackage
+from airflow.utils.state import State
+
 
 log = logging.getLogger(__name__)
 
@@ -61,17 +65,29 @@ class GitCheckoutOperator(BashOperator):
 
 
 class GitPushOperator(BashOperator):
+    """Check if there are updates, And push when necessary"""
     def __init__(self, dataset, *args, **kwargs):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        if [[ $(git diff --name-only | grep -v 'datapackage.json' | head -c1 | wc -c) -ne 0 ]]; then
+        if [[ $(git status -s | grep -e "^[??| D]" | head -c1 | wc -c) -ne 0 ]]; then
             git add .
             git commit -m "auto generated dataset"
             git push -u origin
         else
-            echo "nothing to push"
+            $HAS_UPDATE=0
+            for f in $(git diff --name-only); do
+                if [[ $(git diff $f | tail -n +5 | grep -e "^[++|\-\-]" | head -c1 | wc -c) -ne 0 ]]; then
+                    $HAS_UPDATE=1
+                    git add $f
+                fi
+            done
+            if [[ $HAS_UPDATE -eq 1]]; then
+                git commit -m "auto generated dataset"
+            else
+                echo "nothing to push"
             git reset --hard
+            git push -u origin
         fi
         '''
         super(GitPushOperator, self).__init__(bash_command=bash_command,
@@ -93,6 +109,50 @@ class ValidateDatasetOperator(BashOperator):
         super(ValidateDatasetOperator, self).__init__(bash_command=bash_command,
                                                       params={'dataset': dataset},
                                                       *args, **kwargs)
+
+
+class DependencyDatasetSensor(ExternalTaskSensor):
+    """Sensor that wait for the dependency. If dependency failed, this sensor failed too."""
+
+    @provide_session
+    def poke(self, context, session=None):
+        if self.execution_delta:
+            dttm = context['execution_date'] - self.execution_delta
+        elif self.execution_date_fn:
+            dttm = self.execution_date_fn(context['execution_date'])
+        else:
+            dttm = context['execution_date']
+
+        dttm_filter = dttm if isinstance(dttm, list) else [dttm]
+        serialized_dttm_filter = ','.join(
+            [datetime.isoformat() for datetime in dttm_filter])
+
+        self.log.info(
+            'Poking for '
+            '{self.external_dag_id}.'
+            '{self.external_task_id} on '
+            '{} ... '.format(serialized_dttm_filter, **locals()))
+        TI = TaskInstance
+
+        not_allowed_status = [State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED]
+        count_failed = session.query(TI).filter(
+            TI.dag_id == self.external_dag_id,
+            TI.task_id == self.external_task_id,
+            TI.state.in_(self.not_allowed_states),
+            TI.execution_date.in_(dttm_filter),
+        ).count()
+
+        if count_failed > 0:
+            raise AirflowException
+
+        count = session.query(TI).filter(
+            TI.dag_id == self.external_dag_id,
+            TI.task_id == self.external_task_id,
+            TI.state.in_(self.allowed_states),
+            TI.execution_date.in_(dttm_filter),
+        ).count()
+        session.commit()
+        return count == len(dttm_filter)
 
 
 class DataPackageUpdatedSensor(BaseSensorOperator):
