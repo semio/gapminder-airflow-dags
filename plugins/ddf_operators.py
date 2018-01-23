@@ -237,4 +237,5 @@ class DDFPlugin(AirflowPlugin):
                  GitPushOperator,
                  ValidateDatasetOperator,
                  RunETLOperator,
+                 DependencyDatasetSensor,
                  GenerateDatapackageOperator]
