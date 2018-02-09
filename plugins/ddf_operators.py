@@ -167,7 +167,7 @@ class DependencyDatasetSensor(ExternalTaskSensor):
         serialized_dttm_filter = ','.join(
             [datetime.isoformat() for datetime in dttm_filter])
 
-        self.log.info(
+        log.info(
             'Poking for '
             '{self.external_dag_id}.'
             '{self.external_task_id} on '
