@@ -119,7 +119,7 @@ class GitPushOperator(BashOperator):
                     git add $f
                 fi
             done
-            if [[ $HAS_UPDATE -eq 1]]; then
+            if [[ $HAS_UPDATE -eq 1 ]]; then
                 git commit -m "auto generated dataset"
             else
                 echo "nothing to push"
