@@ -153,6 +153,7 @@ class DependencyDatasetSensor(ExternalTaskSensor):
     @apply_defaults
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.not_allowed_status = [State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED]
 
     @provide_session
     def poke(self, context, session=None):
@@ -174,7 +175,6 @@ class DependencyDatasetSensor(ExternalTaskSensor):
             '{} ... '.format(serialized_dttm_filter, **locals()))
         TI = TaskInstance
 
-        not_allowed_status = [State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED]
         count_failed = session.query(TI).filter(
             TI.dag_id == self.external_dag_id,
             TI.task_id == self.external_task_id,
