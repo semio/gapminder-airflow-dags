@@ -28,9 +28,9 @@ class GenerateDatapackageOperator(PythonOperator):
             dp = get_datapackage(d, update=True)
             dump_json(osp.join(dataset, 'datapackage.json'), dp)
 
-        super(GenerateDatapackageOperator, self).__init__(python_callable=_gen_dp,
-                                                          op_args=[dataset],
-                                                          *args, **kwargs)
+        super().__init__(python_callable=_gen_dp,
+                         op_args=[dataset],
+                         *args, **kwargs)
 
 
 class RunETLOperator(BashOperator):
@@ -45,10 +45,31 @@ class RunETLOperator(BashOperator):
         cd etl/scripts/
         python etl.py
         '''
-        super(RunETLOperator, self).__init__(bash_command=bash_command,
-                                             params={'dataset': dataset,
-                                                     'datasets_dir': Variable.get('datasets_dir')},
-                                             *args, **kwargs)
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset,
+                                 'datasets_dir': Variable.get('datasets_dir')},
+                         *args, **kwargs)
+
+
+class UpdateSourceOperator(BashOperator):
+    def __init__(self, dataset, *args, **kwargs):
+        bash_command = '''\
+        set -eu
+        export DATASETS_DIR={{ params.datasets_dir }}
+        cd {{ params.dataset }}
+
+        cd etl/scripts/
+        if [ -f update_source.py ]; then
+            python update_source.py
+            echo "updated source."
+        else
+            echo "no updater script"
+        fi
+        '''
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset,
+                                 'datasets_dir': Variable.get('datasets_dir')},
+                         *args, **kwargs)
 
 
 class GitCheckoutOperator(BashOperator):
@@ -58,10 +79,25 @@ class GitCheckoutOperator(BashOperator):
         cd {{ params.dataset }}
         git checkout {{ params.version }}
         '''
-        super(GitCheckoutOperator, self).__init__(bash_command=bash_command,
-                                                  params={'dataset': dataset,
-                                                          'version': version},
-                                                  *args, **kwargs)
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset,
+                                 'version': version},
+                         *args, **kwargs)
+
+
+class GitMergeOperator(BashOperator):
+    def __init__(self, dataset, head, base, *args, **kwargs):
+        bash_command = '''\
+        set -eu
+        cd {{ params.dataset }}
+        git checkout {{ params.base }}
+        git merge {{ params.head }}
+        '''
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset,
+                                 'head': head,
+                                 'base': base},
+                         *args, **kwargs)
 
 
 class GitPushOperator(BashOperator):
@@ -90,9 +126,9 @@ class GitPushOperator(BashOperator):
             git push -u origin
         fi
         '''
-        super(GitPushOperator, self).__init__(bash_command=bash_command,
-                                              params={'dataset': dataset},
-                                              *args, **kwargs)
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset},
+                         *args, **kwargs)
 
 
 class ValidateDatasetOperator(BashOperator):
@@ -106,9 +142,9 @@ class ValidateDatasetOperator(BashOperator):
             exit 1
         fi
         '''
-        super(ValidateDatasetOperator, self).__init__(bash_command=bash_command,
-                                                      params={'dataset': dataset},
-                                                      *args, **kwargs)
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset},
+                         *args, **kwargs)
 
 
 class DependencyDatasetSensor(ExternalTaskSensor):
@@ -132,6 +168,7 @@ class DependencyDatasetSensor(ExternalTaskSensor):
             '{self.external_dag_id}.'
             '{self.external_task_id} on '
             '{} ... '.format(serialized_dttm_filter, **locals()))
+        # FIXME: below line might be wrong.
         TI = TaskInstance
 
         not_allowed_status = [State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED]
@@ -169,7 +206,7 @@ class DataPackageUpdatedSensor(BaseSensorOperator):
                 raise FileNotFoundError('dataset not found: {}'.format(p))
         self.path = path
         self.dependencies = dependencies
-        super(DataPackageUpdatedSensor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def poke(self, context):
         dp = json.load(open(osp.join(self.path, 'datapackage.json')))
@@ -193,7 +230,7 @@ class LockDataPackageOperator(BaseSensorOperator):
         self.op = op
         self.dps = dps
         self.xcom_key = 'lock_datasets'
-        super(LockDataPackageOperator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def poke(self, context):
         if self.op == 'unlock':
@@ -208,7 +245,7 @@ class LockDataPackageOperator(BaseSensorOperator):
         return True
 
     def execute(self, context):
-        super(LockDataPackageOperator, self).execute(context)
+        super().execute(context)
         xk = self.xcom_key
         locks = self.xcom_pull(context, task_ids=None, key=xk)
         if not isinstance(locks, dict):
@@ -233,7 +270,9 @@ class DDFPlugin(AirflowPlugin):
     name = "ddf plugin"
     operators = [LockDataPackageOperator,
                  DataPackageUpdatedSensor,
+                 UpdateSourceOperator,
                  GitCheckoutOperator,
+                 GitMergeOperator,
                  GitPushOperator,
                  ValidateDatasetOperator,
                  RunETLOperator,
