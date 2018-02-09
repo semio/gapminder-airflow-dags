@@ -123,6 +123,7 @@ class GitPushOperator(BashOperator):
                 git commit -m "auto generated dataset"
             else
                 echo "nothing to push"
+            fi
             git reset --hard
             git push -u origin
         fi
