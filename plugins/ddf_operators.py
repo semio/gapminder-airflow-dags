@@ -8,7 +8,7 @@ from datetime import datetime
 from pandas import to_datetime
 
 from airflow.exceptions import AirflowSkipException, AirflowException
-from airflow.models import Variable
+from airflow.models import Variable, TaskInstance
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.sensors import BaseSensorOperator, ExternalTaskSensor
@@ -150,6 +150,10 @@ class ValidateDatasetOperator(BashOperator):
 class DependencyDatasetSensor(ExternalTaskSensor):
     """Sensor that wait for the dependency. If dependency failed, this sensor failed too."""
 
+    @apply_defaults
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     @provide_session
     def poke(self, context, session=None):
         if self.execution_delta:
@@ -168,7 +172,6 @@ class DependencyDatasetSensor(ExternalTaskSensor):
             '{self.external_dag_id}.'
             '{self.external_task_id} on '
             '{} ... '.format(serialized_dttm_filter, **locals()))
-        # FIXME: below line might be wrong.
         TI = TaskInstance
 
         not_allowed_status = [State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED]
