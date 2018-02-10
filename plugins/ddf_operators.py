@@ -147,7 +147,8 @@ class ValidateDatasetOperator(BashOperator):
         fi
         '''
         super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset},
+                         params={'dataset': dataset,
+                                 'logpath': logpath},
                          *args, **kwargs)
 
 
