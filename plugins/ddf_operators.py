@@ -135,13 +135,14 @@ class GitPushOperator(BashOperator):
 
 
 class ValidateDatasetOperator(BashOperator):
-    def __init__(self, dataset, *args, **kwargs):
+    def __init__(self, dataset, logpath, *args, **kwargs):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
         validate-ddf ./
         if [ `ls | grep validation*.log | wc -c` -ne 0 ]
         then
+            mv validation*.log {{ params.logpath }}
             exit 1
         fi
         '''

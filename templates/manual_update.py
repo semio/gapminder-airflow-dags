@@ -26,8 +26,11 @@ default_args = {
 
 target_dataset = 'open-numbers/{{ name }}'
 
+# variables
 datasets_dir = Variable.get('datasets_dir')
+airflow_home = Variable.get('airflow_home')
 
+logpath = osp.join(airflow_home, 'validation-log')
 out_dir = osp.join(datasets_dir, target_dataset)
 dag_id = target_dataset.replace('/', '_')
 sub_dag_id = dag_id + '.' + 'dependency_check'
@@ -51,7 +54,8 @@ dependency_task = DependencyDatasetSensor(task_id='update_datasets', dag=dag,
 
 validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
                                        pool='etl',
-                                       dataset=out_dir)
+                                       dataset=out_dir,
+                                       logpath=logpath)
 
 # set dependencies
 dependency_task >> validate_ddf

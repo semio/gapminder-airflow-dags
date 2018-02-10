@@ -41,8 +41,11 @@ default_args = {
 target_dataset = 'open-numbers/{{ name }}'
 depends_on = {{ dependencies }}
 
+# variables
 datasets_dir = Variable.get('datasets_dir')
+airflow_home = Variable.get('airflow_home')
 
+logpath = osp.join(airflow_home, 'validation-log')
 out_dir = osp.join(datasets_dir, target_dataset)
 dag_id = target_dataset.replace('/', '_')
 sub_dag_id = dag_id + '.' + 'dependency_check'
@@ -99,7 +102,8 @@ datapackage_task = GenerateDatapackageOperator(task_id='generate_datapackage', d
                                                dataset=out_dir)
 validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
                                        pool='etl',
-                                       dataset=out_dir)
+                                       dataset=out_dir,
+                                       logpath=logpath)
 git_push_task = GitPushOperator(task_id='git_push', dag=dag,
                                 dataset=out_dir)
 
