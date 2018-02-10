@@ -107,7 +107,7 @@ class GitPushOperator(BashOperator):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        if [[ $(git status -s | grep -e "^[??| D]" | head -c1 | wc -c) -ne 0 ]]; then
+        if [[ $(git status -s | grep -e '^[? ][?D]' | head -c1 | wc -c) -ne 0 ]]; then
             git add .
             git commit -m "auto generated dataset"
             git push -u origin
