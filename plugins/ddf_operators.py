@@ -120,6 +120,7 @@ class GitPushOperator(BashOperator):
                 fi
             done
             if [[ $HAS_UPDATE -eq 1 ]]; then
+                git add datapackage.json
                 git commit -m "auto generated dataset"
             else
                 echo "nothing to push"
@@ -185,7 +186,7 @@ class DependencyDatasetSensor(ExternalTaskSensor):
         ).count()
 
         if count_failed > 0:
-            raise AirflowException
+            raise AirflowException('External task failed.')
 
         count = session.query(TI).filter(
             TI.dag_id == self.external_dag_id,
