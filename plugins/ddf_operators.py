@@ -142,7 +142,11 @@ class ValidateDatasetOperator(BashOperator):
         validate-ddf ./ --exclude-tags "WARNING"
         if [ `ls | grep validation*.log | wc -c` -ne 0 ]
         then
-            mv validation*.log {{ params.logpath }}
+            LOGPATH="{{ params.logpath }}/`basename {{ params.dataset }}`"
+            if [ ! -d $LOGPATH ]; then
+                mkdir $LOGPATH
+            fi
+            mv validation*.log $LOGPATH
             exit 1
         fi
         '''
