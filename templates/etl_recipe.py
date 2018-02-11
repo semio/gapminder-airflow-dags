@@ -83,6 +83,7 @@ def sub_dag():
                                     dag=subdag,
                                     allowed_states=['success'],
                                     external_dag_id=dep.replace('/', '_'),
+                                    execution_date_fn=lambda x: get_dep_task_time(x, 10),
                                     external_task_id='validate')
         dep_tasks.append(t)
 
