@@ -194,7 +194,7 @@ cd {{ params.dags_dir }}
 
 {% for dag_id in task_instance.xcom_pull(
     task_ids='add_remove_datasets', key='return_value')['removal'] %}\
-airflow pause {{ dag_id }};
+airflow pause open-numbers_{{ dag_id }};
 rm {{ dag_id }};
 {% endfor %}
 
