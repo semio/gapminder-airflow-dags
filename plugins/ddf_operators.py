@@ -139,7 +139,7 @@ class ValidateDatasetOperator(BashOperator):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        validate-ddf ./ --exclude-tags "WARNING"
+        validate-ddf ./ --exclude-tags "WARNING" --exclued-tags "TRANSLATION"
         if [ `ls | grep validation*.log | wc -c` -ne 0 ]
         then
             LOGPATH="{{ params.logpath }}/`basename {{ params.dataset }}`"
