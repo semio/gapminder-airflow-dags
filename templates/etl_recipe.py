@@ -106,6 +106,7 @@ validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
                                        dataset=out_dir,
                                        logpath=logpath)
 git_push_task = GitPushOperator(task_id='git_push', dag=dag,
+                                pool='etl',
                                 dataset=out_dir)
 
 # set dependencies
