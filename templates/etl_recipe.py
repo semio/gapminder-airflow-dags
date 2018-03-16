@@ -52,8 +52,14 @@ dag_id = target_dataset.replace('/', '_')
 sub_dag_id = dag_id + '.' + 'dependency_check'
 
 # now define the DAG
-dag = DAG(dag_id, default_args=default_args,
-          schedule_interval='10 0 * * *')
+etl_type = {{ etl_type }}
+
+if etl_type == 'recipe':
+    dag = DAG(dag_id, default_args=default_args,
+              schedule_interval='10 2 * * *')
+else:
+    dag = DAG(dag_id, default_args=default_args,
+              schedule_interval='10 0 * * *')
 
 
 def sub_dag():
@@ -69,10 +75,10 @@ def sub_dag():
 
     dep_tasks = []
 
-    def get_dep_task_time(n, minutes=0):
+    def get_dep_task_time(n, minutes=0, hours=0):
         newdate = datetime(n.year, n.month, n.day, 0, 0)
         if minutes !=0:
-            return newdate + timedelta(minutes=minutes)
+            return newdate + timedelta(minutes=minutes, hours=hours)
         return newdate
 
     update_datasets = DependencyDatasetSensor(task_id='update_datasets', dag=subdag,
@@ -80,13 +86,19 @@ def sub_dag():
                                               external_task_id='update_all_dataset',
                                               execution_date_fn=get_dep_task_time)
 
-    for dep in depends_on:
+    for dep, etl_type in depends_on.items():
+        if etl_type == 'recipe':
+            m = 10
+            h = 2
+        else:
+            m = 10
+            h = 0
         t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
-                                    dag=subdag,
-                                    allowed_states=['success'],
-                                    external_dag_id=dep.replace('/', '_'),
-                                    execution_date_fn=lambda x: get_dep_task_time(x, 10),
-                                    external_task_id='validate')
+                                        dag=subdag,
+                                        allowed_states=['success'],
+                                        external_dag_id=dep.replace('/', '_'),
+                                        execution_date_fn=lambda x: get_dep_task_time(x, m, h),
+                                        external_task_id='validate')
         dep_tasks.append(t)
 
     return subdag

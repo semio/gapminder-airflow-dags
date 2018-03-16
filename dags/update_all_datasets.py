@@ -106,7 +106,9 @@ def add_remove_datasets():
             os.system('git clone {} {}'.format(record['git_url'].replace('git://', 'git+ssh://git@'),
                                                path))
 
-    return {'current_datasets': current_datasets,
+    datasets_types = dict([k, _get_dataset_type(k)] for k in current_datasets)
+
+    return {'current_datasets': datasets_types,
             'addition': to_add,
             'removal': to_remove}
 
@@ -124,35 +126,42 @@ def _get_recipe_file(path):
     return fn
 
 
+def _get_dataset_type(dataset):
+    dataset_path = osp.join(datasets_dir, 'open-numbers', dataset)
+    etl_dir = osp.join(dataset_path, 'etl/scripts')
+
+    if not osp.exists(etl_dir):
+        etl_file = ''
+        etl_type = 'manual'
+    else:
+        try:
+            etl_file = _get_recipe_file(etl_dir)
+            etl_type = 'recipe'
+        except AttributeError:
+            etl_file = ''
+            etl_type = 'python'
+        except ModuleNotFoundError:
+            etl_file = ''
+            etl_type = 'manual'
+        except:
+            raise
+
+    return (etl_type, etl_file)
+
+
 def refresh_dags(**context):
     """add/modify dags"""
     xcom = context['task_instance'].xcom_pull(task_ids='add_remove_datasets', key='return_value')
     current = xcom['current_datasets']
-    to_remove = xcom['removal']
+    # to_remove = xcom['removal']  # TODO: add code to remove DAG from database.
 
     env = Environment(loader=FileSystemLoader(osp.join(airflow_home, 'templates')))
 
     def refresh_dag(dataset):
         # 1. get all dependencies from etl scripts
         # 2. re-generate the DAG, replace the old one
-        dataset_path = osp.join(datasets_dir, 'open-numbers', dataset)
-        etl_dir = osp.join(dataset_path, 'etl/scripts')
-
-        if not osp.exists(etl_dir):
-            fn = ''
-            etl_type = 'manual'
-        else:
-            try:
-                fn = _get_recipe_file(etl_dir)
-                etl_type = 'recipe'
-            except AttributeError:
-                fn = ''
-                etl_type = 'python'
-            except ModuleNotFoundError:
-                fn = ''
-                etl_type = 'manual'
-            except:
-                raise
+        etl_dir = osp.join(datasets_dir, 'etl/scripts')
+        etl_type, fn = current[dataset]
 
         if etl_type == 'recipe':
             recipe = osp.join(etl_dir, fn)
@@ -182,14 +191,17 @@ def refresh_dags(**context):
         dag_name = dataset.replace('/', '_')
         dag_path = osp.join(airflow_home, 'dags', dag_name)
 
+        dependencies = dict([d, current[d][0]] for d in dependencies)
+
         with open(dag_path+'.py', 'w') as f:
             f.write(template.render(name=dag_name,
                                     datetime=dt_str,
                                     priority=p,
-                                    dependencies=list(dependencies)))
+                                    etl_type=etl_type,
+                                    dependencies=dependencies))
             f.close()
 
-    for ds in current:
+    for ds in current.keys():
         logging.info('checking {}'.format(ds))
         refresh_dag(ds)
 
