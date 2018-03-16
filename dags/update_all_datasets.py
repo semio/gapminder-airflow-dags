@@ -171,7 +171,7 @@ def refresh_dags(**context):
             dependencies = set()
             for i in chef.ingredients:
                 if i.ddf_id is not None and i.ddf_id.startswith('open-numbers'):
-                    dependencies.add(i.ddf_id)
+                    dependencies.add(i.ddf_id.replace('open-numbers/', ''))
             logging.info("dependencies: {}".format(dependencies))
         else:
             dependencies = set()
