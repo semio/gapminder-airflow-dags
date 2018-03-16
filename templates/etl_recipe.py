@@ -54,12 +54,14 @@ sub_dag_id = dag_id + '.' + 'dependency_check'
 # now define the DAG
 etl_type = "{{ etl_type }}"
 
-if etl_type == 'recipe':
-    dag = DAG(dag_id, default_args=default_args,
-              schedule_interval='10 2 * * *')
-else:
-    dag = DAG(dag_id, default_args=default_args,
-              schedule_interval='10 0 * * *')
+{% if etl_type == 'recipe' %}
+schedule = '10 2 * * *'
+{% else %}
+schedule = '10 0 * * *'
+{% endif %}
+
+dag = DAG(dag_id, default_args=default_args,
+          schedule_interval=schedule)
 
 
 def sub_dag():
