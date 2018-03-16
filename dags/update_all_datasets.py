@@ -160,7 +160,8 @@ def refresh_dags(**context):
     def refresh_dag(dataset):
         # 1. get all dependencies from etl scripts
         # 2. re-generate the DAG, replace the old one
-        etl_dir = osp.join(datasets_dir, 'etl/scripts')
+        dataset_path = osp.join(datasets_dir, 'open-numbers', dataset)
+        etl_dir = osp.join(dataset_path, 'etl/scripts')
         etl_type, fn = current[dataset]
 
         if etl_type == 'recipe':
