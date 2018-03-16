@@ -52,7 +52,7 @@ dag_id = target_dataset.replace('/', '_')
 sub_dag_id = dag_id + '.' + 'dependency_check'
 
 # now define the DAG
-etl_type = {{ etl_type }}
+etl_type = "{{ etl_type }}"
 
 if etl_type == 'recipe':
     dag = DAG(dag_id, default_args=default_args,
