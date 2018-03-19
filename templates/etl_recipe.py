@@ -16,6 +16,7 @@ from airflow.operators import (GenerateDatapackageOperator,
 from airflow.operators.subdag_operator import SubDagOperator
 
 from functools import partial
+import logging
 
 # steps:
 # 1. checkout the airflow branch
