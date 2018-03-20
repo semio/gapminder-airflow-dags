@@ -96,7 +96,7 @@ def sub_dag():
         else:
             m = 10
             h = 0
-        logging.info("adding the sensor task listening to {}:{}".format(h, m))
+        logging.info("adding the sensor {} listening to {}:{}".format(dep, h, m))
         t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
                                     dag=subdag,
                                     allowed_states=['success'],
