@@ -196,7 +196,7 @@ def refresh_dags(**context):
         dependencies = dict([d, current[d][0]] for d in dependencies)
 
         with open(dag_path+'.py', 'w') as f:
-            f.write(template.render(name=dag_name,
+            f.write(template.render(name=dataset,
                                     datetime=dt_str,
                                     priority=p,
                                     etl_type=etl_type,
