@@ -128,7 +128,7 @@ def _get_recipe_file(path):
 
 
 def _get_dataset_type(dataset):
-    dataset_path = osp.join(datasets_dir, 'open-numbers', dataset)
+    dataset_path = osp.join(datasets_dir, dataset)
     etl_dir = osp.join(dataset_path, 'etl/scripts')
 
     if not osp.exists(etl_dir):
@@ -161,7 +161,7 @@ def refresh_dags(**context):
     def refresh_dag(dataset):
         # 1. get all dependencies from etl scripts
         # 2. re-generate the DAG, replace the old one
-        dataset_path = osp.join(datasets_dir, 'open-numbers', dataset)
+        dataset_path = osp.join(datasets_dir, dataset)
         etl_dir = osp.join(dataset_path, 'etl/scripts')
         etl_type, fn = current[dataset]
 
