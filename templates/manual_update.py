@@ -24,7 +24,7 @@ default_args = {
     'poke_interval': 300
 }
 
-target_dataset = 'open-numbers/{{ name }}'
+target_dataset = '{{ name }}'
 
 # variables
 datasets_dir = Variable.get('datasets_dir')
