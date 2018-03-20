@@ -107,7 +107,7 @@ def add_remove_datasets():
             os.system('git clone {} {}'.format(record['git_url'].replace('git://', 'git+ssh://git@'),
                                                path))
 
-    datasets_types = dict([k, list(_get_dataset_type(k))] for k in current_datasets)
+    datasets_types = dict(['open-numbers/'+k, list(_get_dataset_type(k))] for k in current_datasets)
 
     return {'current_datasets': datasets_types,
             'addition': to_add,
