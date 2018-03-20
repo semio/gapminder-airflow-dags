@@ -40,7 +40,7 @@ default_args = {
     'timeout': 60 * 60 * 8     # 8 hours
 }
 
-target_dataset = 'open-numbers/{{ name }}'
+target_dataset = '{{ name }}'
 depends_on = {{ dependencies }}
 
 # variables
