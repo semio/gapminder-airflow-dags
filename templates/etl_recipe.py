@@ -80,7 +80,7 @@ def sub_dag():
 
     def get_dep_task_time(n, minutes=0, hours=0):
         newdate = datetime(n.year, n.month, n.day, 0, 0)
-        if minutes !=0:
+        if minutes != 0 or hours != 0:
             return newdate + timedelta(minutes=minutes, hours=hours)
         return newdate
 
