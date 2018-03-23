@@ -42,9 +42,7 @@ dag = DAG(dag_id, default_args=default_args,
 
 def get_dep_task_time(n, minutes=0):
     newdate = datetime(n.year, n.month, n.day, 0, 0)
-    if minutes !=0:
-        return newdate + timedelta(minutes=minutes)
-    return newdate
+    return newdate + timedelta(minutes=minutes)
 
 
 dependency_task = DependencyDatasetSensor(task_id='update_datasets', dag=dag,
