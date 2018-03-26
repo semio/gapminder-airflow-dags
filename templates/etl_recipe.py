@@ -89,17 +89,15 @@ def sub_dag():
 
     for dep, etl_type in depends_on.items():
         if etl_type == 'recipe':
-            m = 10
-            h = 2
+            date_fn = partial(get_dep_task_time, hours=2, minutes=10)
         else:
-            m = 10
-            h = 0
-        logging.info("adding the sensor {} listening to {}:{}".format(dep, h, m))
+            date_fn = partial(get_dep_task_time, hours=0, minutes=10)
+
         t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
                                     dag=subdag,
                                     allowed_states=['success'],
                                     external_dag_id=dep.replace('/', '_'),
-                                    execution_date_fn=lambda x: get_dep_task_time(x, m, h),
+                                    execution_date_fn=date_fn,
                                     external_task_id='validate')
         dep_tasks.append(t)
 
