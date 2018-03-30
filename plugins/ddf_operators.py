@@ -156,52 +156,46 @@ class ValidateDatasetOperator(BashOperator):
                          *args, **kwargs)
 
 
-class DependencyDatasetSensor(ExternalTaskSensor):
+class DependencyDatasetSensor(BaseSensorOperator):
     """Sensor that wait for the dependency. If dependency failed, this sensor failed too."""
 
     @apply_defaults
-    def __init__(self, *args, **kwargs):
+    def __init__(self, external_dag_id, external_task_id,
+                 execution_date=None, allowed_states=[State.SUCCESS], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.not_allowed_states = [State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED]
+        self.allowed_states = allowed_states
+        self.execution_date = execution_date
+
+        self.external_dag_id = external_dag_id
+        self.external_task_id = external_task_id
 
     @provide_session
     def poke(self, context, session=None):
-        if self.execution_delta:
-            dttm = context['execution_date'] - self.execution_delta
-        elif self.execution_date_fn:
-            dttm = self.execution_date_fn(context['execution_date'])
+        if self.execution_date is None:
+            dt = context['execution_date']
         else:
-            dttm = context['execution_date']
-
-        dttm_filter = dttm if isinstance(dttm, list) else [dttm]
-        serialized_dttm_filter = ','.join(
-            [datetime.isoformat() for datetime in dttm_filter])
+            dt = self.execution_date
 
         log.info(
             'Poking for '
             '{self.external_dag_id}.'
             '{self.external_task_id} on '
-            '{} ... '.format(serialized_dttm_filter, **locals()))
+            '{} ... '.format(dt, **locals()))
         TI = TaskInstance
 
-        count_failed = session.query(TI).filter(
+        last_task = session.query(TI).filter(
             TI.dag_id == self.external_dag_id,
             TI.task_id == self.external_task_id,
-            TI.state.in_(self.not_allowed_states),
-            TI.execution_date.in_(dttm_filter),
-        ).count()
+            TI.execution_date.between(dt, dt),
+        ).order_by(TI.execution_date.desc()).first()
 
-        if count_failed > 0:
-            raise AirflowException('External task failed.')
-
-        count = session.query(TI).filter(
-            TI.dag_id == self.external_dag_id,
-            TI.task_id == self.external_task_id,
-            TI.state.in_(self.allowed_states),
-            TI.execution_date.in_(dttm_filter),
-        ).count()
-        session.commit()
-        return count == len(dttm_filter)
+        if last_task:
+            if last_task.state in self.not_allowed_states:
+                raise AirflowException('External task failed.')
+            elif last_task.state in self.allowed_states:
+                session.commit()
+                return True
 
 
 class DataPackageUpdatedSensor(BaseSensorOperator):

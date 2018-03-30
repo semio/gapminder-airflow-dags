@@ -78,26 +78,16 @@ def sub_dag():
 
     dep_tasks = []
 
-    def get_dep_task_time(n, minutes=0, hours=0):
-        newdate = datetime(n.year, n.month, n.day, 0, 0)
-        return newdate + timedelta(minutes=minutes, hours=hours)
+    if etl_type != 'recipe':
+        update_datasets = DependencyDatasetSensor(task_id='update_datasets', dag=subdag,
+                                                  external_dag_id='update_all_datasets',
+                                                  external_task_id='update_all_dataset')
 
-    update_datasets = DependencyDatasetSensor(task_id='update_datasets', dag=subdag,
-                                              external_dag_id='update_all_datasets',
-                                              external_task_id='update_all_dataset',
-                                              execution_date_fn=get_dep_task_time)
-
-    for dep, etl_type in depends_on.items():
-        if etl_type == 'recipe':
-            date_fn = partial(get_dep_task_time, hours=2, minutes=10)
-        else:
-            date_fn = partial(get_dep_task_time, hours=0, minutes=10)
-
+    for dep in depends_on.keys():
         t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
                                     dag=subdag,
                                     allowed_states=['success'],
                                     external_dag_id=dep.replace('/', '_'),
-                                    execution_date_fn=date_fn,
                                     external_task_id='validate')
         dep_tasks.append(t)
 
