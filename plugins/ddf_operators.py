@@ -4,7 +4,7 @@ import json
 import logging
 import os.path as osp
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pandas import to_datetime
 
 from airflow.exceptions import AirflowSkipException, AirflowException
@@ -176,19 +176,30 @@ class DependencyDatasetSensor(BaseSensorOperator):
             dt = context['execution_date']
         else:
             dt = self.execution_date
+            if isinstance(dt, str):
+                dt = to_datetime(dt)
+
+        dt_start = datetime(dt.year, dt.month, dt.day, 0, 0, 0)
+        dt_end = dt + timedelta(hours=23, minutes=59, seconds=59)
 
         log.info(
             'Poking for '
             '{self.external_dag_id}.'
             '{self.external_task_id} on '
-            '{} ... '.format(dt, **locals()))
+            '{} ... '.format(dt.date(), **locals()))
         TI = TaskInstance
 
-        last_task = session.query(TI).filter(
+        last_tasks = session.query(TI).filter(
             TI.dag_id == self.external_dag_id,
             TI.task_id == self.external_task_id,
             TI.execution_date.between(dt, dt),
-        ).order_by(TI.execution_date.desc()).first()
+        ).order_by(TI.execution_date.desc())
+
+        last_task = last_tasks.first()
+
+        log.info('task count between {} and {}: {}'.format(dt_start,
+                                                           dt_end,
+                                                           last_tasks.count()))
 
         if last_task:
             if last_task.state in self.not_allowed_states:
