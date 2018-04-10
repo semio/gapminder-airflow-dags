@@ -80,15 +80,29 @@ done
 
 def add_remove_datasets():
     """load all datasets from open-numbers, add new datasets and remove closed ones"""
-    url = 'https://api.github.com/orgs/open-numbers/repos'
-    res = requests.get(url).json()
+    url = 'https://api.github.com/orgs/open-numbers/repos?per_page=100'
+    res = requests.get(url)
+    res_json = [res.json()]
+    next_link = res.headers.get('Link')
+
+    while next_link is not None:
+        url = next_link.split(';')[0][1:-1]
+        res = requests.get(url)
+        next_link = res.headers.get('Link')
+        res_json.append(res.json())
+
+    all_repos = []
+
+    for rs in res_json:
+        for r in rs:
+            all_repos.append(r)
 
     # remove datasets
     existing_datasets = []
     for i in os.listdir(osp.join(datasets_dir, 'open-numbers')):
         if osp.isdir(osp.join(datasets_dir, 'open-numbers', i)):
             existing_datasets.append(i)
-    current_datasets = [x['name'] for x in res]
+    current_datasets = [x['name'] for x in all_repos]
 
     to_remove = set(existing_datasets) - set(current_datasets)
     for record in to_remove:
