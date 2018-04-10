@@ -112,7 +112,7 @@ def add_remove_datasets():
 
     # add datasets
     to_add = []
-    for record in res:
+    for record in all_repos:
         path = osp.join(datasets_dir, 'open-numbers', record['name'])
         if not osp.exists(path):
             logger.info('cloning dataset: {}'.format(record['name']))
