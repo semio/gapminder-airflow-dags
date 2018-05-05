@@ -133,7 +133,8 @@ def _get_dataset_type(dataset):
     dataset_path = osp.join(datasets_dir, dataset)
     etl_dir = osp.join(dataset_path, 'etl/scripts')
 
-    out = subprocess.run(['ddf', 'etl_type', '-d', etl_dir]).stdout.decode('utf-8')
+    out = subprocess.run(['ddf', 'etl_type', '-d', etl_dir], 
+                         stdout=subprocess.PIPE).stdout.decode('utf-8')
     return out.split(',')
 
 
