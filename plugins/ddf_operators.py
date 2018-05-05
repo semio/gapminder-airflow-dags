@@ -179,7 +179,7 @@ class DependencyDatasetSensor(BaseSensorOperator):
                 dt = to_datetime(dt)
 
         dt_start = datetime(dt.year, dt.month, dt.day, 0, 0, 0)
-        dt_end = dt + timedelta(hours=23, minutes=59, seconds=59)
+        dt_end = dt_start + timedelta(hours=23, minutes=59, seconds=59)
 
         log.info(
             'Poking for '
@@ -191,7 +191,7 @@ class DependencyDatasetSensor(BaseSensorOperator):
         last_tasks = session.query(TI).filter(
             TI.dag_id == self.external_dag_id,
             TI.task_id == self.external_task_id,
-            TI.execution_date.between(dt, dt),
+            TI.execution_date.between(dt_start, dt_end),
         ).order_by(TI.execution_date.desc())
 
         last_task = last_tasks.first()
