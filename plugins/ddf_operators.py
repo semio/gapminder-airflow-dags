@@ -90,7 +90,6 @@ class GitMergeOperator(BashOperator):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        git checkout {{ params.head }}
         git checkout {{ params.base }}
         git merge {{ params.head }}
         '''
