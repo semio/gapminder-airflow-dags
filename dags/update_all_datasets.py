@@ -132,13 +132,13 @@ def add_remove_datasets():
 def _get_dataset_type(dataset):
     dataset_path = osp.join(datasets_dir, dataset)
     etl_dir = osp.join(dataset_path, 'etl/scripts')
-    
+
     out = subprocess.run(['ddf', 'etl_type', '-d', etl_dir],
-                         stdout=subprocess.PIPE).stdout.decode('utf-8')
+                         stdout=subprocess.PIPE)
     if out.returncode != 0:
         logging.info('command did not return successfully. fall back to manual')
         return ['manual', '']
-    return out.replace('\n', '').split(',')
+    return out.stdout.decode('utf-8').replace('\n', '').split(',')
 
 
 def refresh_dags(**context):
