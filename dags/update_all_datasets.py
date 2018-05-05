@@ -7,6 +7,7 @@ import os
 import os.path as osp
 import shutil
 import sys
+import subprocess
 from datetime import datetime, timedelta
 
 import requests
@@ -128,40 +129,12 @@ def add_remove_datasets():
             'removal': list(to_remove)}
 
 
-def _get_recipe_file(path):
-    sys.path.insert(0, path)
-    try:
-        import etl
-        fn = etl.recipe_file
-    finally:
-        sys.path.remove(path)
-        if 'etl' in sys.modules:
-            del sys.modules["etl"]
-            del etl
-    return fn
-
-
 def _get_dataset_type(dataset):
     dataset_path = osp.join(datasets_dir, dataset)
     etl_dir = osp.join(dataset_path, 'etl/scripts')
 
-    if not osp.exists(etl_dir):
-        etl_file = ''
-        etl_type = 'manual'
-    else:
-        try:
-            etl_file = _get_recipe_file(etl_dir)
-            etl_type = 'recipe'
-        except AttributeError:
-            etl_file = ''
-            etl_type = 'python'
-        except ModuleNotFoundError:
-            etl_file = ''
-            etl_type = 'manual'
-        except:
-            raise
-
-    return (etl_type, etl_file)
+    out = subprocess.run(['ddf', 'etl_type', '-d', etl_dir]).stdout.decode('utf-8')
+    return out.split(',')
 
 
 def refresh_dags(**context):
