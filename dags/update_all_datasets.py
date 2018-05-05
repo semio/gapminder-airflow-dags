@@ -138,7 +138,7 @@ def _get_dataset_type(dataset):
                              stdout=subprocess.PIPE).stdout.decode('utf-8')
     except FileNotFoundError:
         return ['manual', '']
-    return out.split(',')
+    return out.replace('\n', '').split(',')
 
 
 def refresh_dags(**context):
