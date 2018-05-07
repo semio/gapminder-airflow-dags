@@ -56,9 +56,9 @@ sub_dag_id = dag_id + '.' + 'dependency_check'
 etl_type = "{{ etl_type }}"
 
 {% if etl_type == 'recipe' %}
-schedule = '10 2 * * *'
+schedule = '10 3 * * *'   # recipe datasets: 3:10 everyday
 {% else %}
-schedule = '10 0 * * *'
+schedule = '0 1 * * 0'    # manual/source datasets: 1:00 every Sunday
 {% endif %}
 
 dag = DAG(dag_id, default_args=default_args,
