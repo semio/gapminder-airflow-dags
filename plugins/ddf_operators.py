@@ -43,7 +43,7 @@ class RunETLOperator(BashOperator):
         ddf cleanup ddf .
 
         cd etl/scripts/
-        python etl.py
+        python3 etl.py
         '''
         super().__init__(bash_command=bash_command,
                          params={'dataset': dataset,
@@ -60,7 +60,7 @@ class UpdateSourceOperator(BashOperator):
 
         cd etl/scripts/
         if [ -f update_source.py ]; then
-            python update_source.py
+            python3 update_source.py
             echo "updated source."
         else
             echo "no updater script"
