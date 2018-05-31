@@ -58,7 +58,7 @@ etl_type = "{{ etl_type }}"
 {% if etl_type == 'recipe' %}
 schedule = '10 3 * * *'   # recipe datasets: 3:10 everyday
 {% else %}
-schedule = '0 1 * * 0'    # manual/source datasets: 1:00 every Sunday
+schedule = '0 1 * * 0'    # source datasets: 1:00 every Sunday
 {% endif %}
 
 dag = DAG(dag_id, default_args=default_args,
@@ -72,7 +72,8 @@ def sub_dag():
         'start_date': {{ datetime }},
         'retry_delay': timedelta(minutes=5),
         'poke_interval': 60 * 10,
-        'timeout': 60 * 60 * 8
+        'timeout': 60 * 60 * 8,
+        'priority_weight': 0
     }
     subdag = DAG(sub_dag_id, default_args=args, schedule_interval='@once')
 
