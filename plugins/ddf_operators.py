@@ -139,14 +139,18 @@ class ValidateDatasetOperator(BashOperator):
         set -eu
         cd {{ params.dataset }}
         validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --multithread
+        sleep 2
         if [ `ls | grep validation*.log | wc -c` -ne 0 ]
         then
+            echo "validation not successful, moving the log files..."
             LOGPATH="{{ params.logpath }}/`basename {{ params.dataset }}`"
             if [ ! -d $LOGPATH ]; then
                 mkdir $LOGPATH
             fi
             mv validation*.log $LOGPATH
             exit 1
+        else
+            exit 0
         fi
         '''
         super().__init__(bash_command=bash_command,
