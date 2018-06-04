@@ -174,13 +174,13 @@ def refresh_dags(**context):
 
         if etl_type == 'recipe':
             template = env.get_template('etl_recipe.py')
-            p = 1
+            p = 20 - len(dependencies)  # The more dependencies, the less priority
         elif etl_type == 'python':
             template = env.get_template('etl_recipe.py')
-            p = 10
+            p = 20
         else:
             template = env.get_template('manual_update.py')
-            p = 20
+            p = 50
 
         dag_name = dataset.replace('/', '_')
         dag_path = osp.join(airflow_home, 'dags', dag_name)
