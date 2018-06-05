@@ -138,7 +138,7 @@ class ValidateDatasetOperator(BashOperator):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --heap 8192
+        validate-ddf ./ --exclude-tags "WARNING TRANSLATION"
         sleep 2
         if [ `ls | grep validation*.log | wc -c` -ne 0 ]
         then
