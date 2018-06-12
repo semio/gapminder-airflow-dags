@@ -139,7 +139,7 @@ class ValidateDatasetOperator(BashOperator):
         set -eu
         cd {{ params.dataset }}
         DT=`date "+%Y-%m-%dT%H-%M-%S"`
-        VALIDATE_OUTPUT = "validation-$DT.log"
+        VALIDATE_OUTPUT="validation-$DT.log"
         echo "logfile: $VALIDATE_OUTPUT"
         validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent > $VALIDATE_OUTPUT
         sleep 2
