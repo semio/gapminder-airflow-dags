@@ -138,19 +138,23 @@ class ValidateDatasetOperator(BashOperator):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        DT=`date "+%Y-%m-%dT%H:%M:%S"`
-        validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent > "validation-$DT.log"
+        DT=`date "+%Y-%m-%dT%H-%M-%S"`
+        VALIDATE_OUTPUT = "validation-$DT.log"
+        echo "logfile: $VALIDATE_OUTPUT"
+        validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent > $VALIDATE_OUTPUT
         sleep 2
-        if [ `ls | grep validation*.log | wc -c` -ne 0 ]
+        if [ `cat $VALIDATE_OUTPUT | wc -c` -ge 5 ]
         then
-            echo "validation not successful, moving the log files..."
+            echo "validation not successful, moving the log file..."
             LOGPATH="{{ params.logpath }}/`basename {{ params.dataset }}`"
             if [ ! -d $LOGPATH ]; then
                 mkdir $LOGPATH
             fi
-            mv validation*.log $LOGPATH
+            mv $VALIDATE_OUTPUT $LOGPATH
             exit 1
         else
+            echo "validation succeed."
+            rm $VALIDATE_OUTPUT
             exit 0
         fi
         '''
