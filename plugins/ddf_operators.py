@@ -141,21 +141,29 @@ class ValidateDatasetOperator(BashOperator):
         DT=`date "+%Y-%m-%dT%H-%M-%S"`
         VALIDATE_OUTPUT="validation-$DT.log"
         echo "logfile: $VALIDATE_OUTPUT"
-        validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent > $VALIDATE_OUTPUT
-        sleep 2
-        if [ `cat $VALIDATE_OUTPUT | wc -c` -ge 5 ]
+        CMD="validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent > $VALIDATE_OUTPUT"
+        if [ `$CMD` ]
         then
-            echo "validation not successful, moving the log file..."
-            LOGPATH="{{ params.logpath }}/`basename {{ params.dataset }}`"
-            if [ ! -d $LOGPATH ]; then
-                mkdir $LOGPATH
-            fi
-            mv $VALIDATE_OUTPUT $LOGPATH
-            exit 1
-        else
+            sleep 2
             echo "validation succeed."
             rm $VALIDATE_OUTPUT
             exit 0
+        else
+            sleep 2
+            if [ `cat $VALIDATE_OUTPUT | wc -c` -ge 5 ]
+            then
+                echo "validation not successful, moving the log file..."
+                LOGPATH="{{ params.logpath }}/`basename {{ params.dataset }}`"
+                if [ ! -d $LOGPATH ]; then
+                    mkdir $LOGPATH
+                fi
+                mv $VALIDATE_OUTPUT $LOGPATH
+                exit 1
+            else
+                echo "ddf-validation failed but no output."
+                rm $VALIDATE_OUTPUT
+                exit 1
+            fi
         fi
         '''
         super().__init__(bash_command=bash_command,
