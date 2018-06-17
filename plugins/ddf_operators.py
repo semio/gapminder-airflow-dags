@@ -141,14 +141,15 @@ class ValidateDatasetOperator(BashOperator):
         DT=`date "+%Y-%m-%dT%H-%M-%S"`
         VALIDATE_OUTPUT="validation-$DT.log"
         echo "logfile: $VALIDATE_OUTPUT"
-        if [ `validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent > $VALIDATE_OUTPUT` ]
+        RES=`validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent`
+        if [ $? ]
         then
             sleep 2
             echo "validation succeed."
-            rm $VALIDATE_OUTPUT
             exit 0
         else
             sleep 2
+            echo $RES > $VALIDATE_OUTPUT
             if [ `cat $VALIDATE_OUTPUT | wc -c` -ge 5 ]
             then
                 echo "validation not successful, moving the log file..."
