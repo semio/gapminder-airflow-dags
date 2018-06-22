@@ -136,7 +136,6 @@ class GitPushOperator(BashOperator):
 class ValidateDatasetOperator(BashOperator):
     def __init__(self, dataset, logpath, *args, **kwargs):
         bash_command = '''\
-        set -eu
         cd {{ params.dataset }}
         DT=`date "+%Y-%m-%dT%H-%M-%S"`
         VALIDATE_OUTPUT="validation-$DT.log"
