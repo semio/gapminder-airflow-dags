@@ -141,7 +141,7 @@ class ValidateDatasetOperator(BashOperator):
         VALIDATE_OUTPUT="validation-$DT.log"
         echo "logfile: $VALIDATE_OUTPUT"
         RES=`validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent`
-        if [ $? ]
+        if [ $? -eq 0 ]
         then
             sleep 2
             echo "validation succeed."
