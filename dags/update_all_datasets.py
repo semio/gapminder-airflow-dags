@@ -122,6 +122,9 @@ def add_remove_datasets():
             os.system('git clone {} {}'.format(record['git_url'].replace('git://', 'git+ssh://git@'),
                                                path))
 
+
+def check_etl_type():
+    current_datasets = os.listdir(datasets_dir)
     datasets_types = dict(['open-numbers/'+k,
                            list(_get_dataset_type('open-numbers/'+k))] for k in current_datasets)
 
@@ -144,7 +147,7 @@ def _get_dataset_type(dataset):
 
 def refresh_dags(**context):
     """add/modify dags"""
-    xcom = context['task_instance'].xcom_pull(task_ids='add_remove_datasets', key='return_value')
+    xcom = context['task_instance'].xcom_pull(task_ids='check_etl_type', key='return_value')
     current = xcom['current_datasets']
     # to_remove = xcom['removal']  # TODO: add code to remove DAG from database.
 
@@ -209,7 +212,7 @@ set -eu
 cd {{ params.dags_dir }}
 
 {% for dag_id in task_instance.xcom_pull(
-    task_ids='add_remove_datasets', key='return_value')['removal'] %}\
+    task_ids='check_etl_type', key='return_value')['removal'] %}\
 airflow pause open-numbers_{{ dag_id }};
 rm {{ dag_id }}.py;
 {% endfor %}
@@ -228,11 +231,20 @@ remove_task = BashOperator(task_id='remove_dags', dag=dag,
                            bash_command=remove_dag_command,
                            params={'dags_dir': osp.join(airflow_home, 'dags')})
 
-git_pull_task = BashOperator(task_id='update_all_dataset',
+git_pull_task = BashOperator(task_id='pull_branches',
                              bash_command=gitpull_template,
                              params={'datasetpath': datasets_dir},
                              retries=3,
                              retry_delay=timedelta(seconds=10),
                              dag=dag)
 
-review_task >> git_pull_task >> refresh_task >> remove_task
+check_etl_type_task = PythonOperator(task_id='check_etl_type', dag=dag,
+                                     python_callable=check_etl_type)
+
+(
+review_task >>
+git_pull_task >>
+check_etl_type_task >>
+refresh_task >>
+remove_task
+)
