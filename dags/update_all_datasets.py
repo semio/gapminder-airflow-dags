@@ -123,7 +123,7 @@ def add_remove_datasets():
 
 
 def check_etl_type():
-    current_datasets = os.listdir(datasets_dir)
+    current_datasets = os.listdir(osp.join(datasets_dir, 'open-numbers'))
     datasets_types = dict(['open-numbers/'+k,
                            list(_get_dataset_type('open-numbers/'+k))] for k in current_datasets)
 
