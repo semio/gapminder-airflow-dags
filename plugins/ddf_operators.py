@@ -194,9 +194,9 @@ class DependencyDatasetSensor(BaseSensorOperator):
             if isinstance(dt, str):
                 dt = to_datetime(dt)
 
-        dt_start = datetime(dt.year, dt.month, dt.day, 0, 0, 0)
-        dt_start = dt_start - timedelta(days=30)
-        dt_end = dt_start + timedelta(hours=23, minutes=59, seconds=59)
+        dt_today = datetime(dt.year, dt.month, dt.day, 0, 0, 0)
+        dt_start= dt_today - timedelta(days=30)                          # check tasks between 30 days ago
+        dt_end = dt_today + timedelta(hours=23, minutes=59, seconds=59)  # and the end of today.
 
         log.info(
             'Poking for '
