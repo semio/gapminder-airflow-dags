@@ -113,12 +113,11 @@ def add_remove_datasets():
         shutil.rmtree(path)
 
     # add datasets
-    to_add = []
     for record in all_repos:
         path = osp.join(datasets_dir, 'open-numbers', record['name'])
         if not osp.exists(path):
             logger.info('cloning dataset: {}'.format(record['name']))
-            to_add.append(record['name'])
+            # to_add.append(record['name'])
             os.system('git clone {} {}'.format(record['git_url'].replace('git://', 'git+ssh://git@'),
                                                path))
 
@@ -128,9 +127,9 @@ def check_etl_type():
     datasets_types = dict(['open-numbers/'+k,
                            list(_get_dataset_type('open-numbers/'+k))] for k in current_datasets)
 
-    return {'current_datasets': datasets_types,
-            'addition': to_add,
-            'removal': list(to_remove)}
+    return {'current_datasets': datasets_types}
+            # 'addition': to_add,
+            # 'removal': list(to_remove)}
 
 
 def _get_dataset_type(dataset):
@@ -241,10 +240,11 @@ git_pull_task = BashOperator(task_id='pull_branches',
 check_etl_type_task = PythonOperator(task_id='check_etl_type', dag=dag,
                                      python_callable=check_etl_type)
 
+# define the DAG
 (
-review_task >>
-git_pull_task >>
-check_etl_type_task >>
-refresh_task >>
-remove_task
+    review_task >>
+    git_pull_task >>
+    check_etl_type_task >>
+    refresh_task >>
+    remove_task
 )
