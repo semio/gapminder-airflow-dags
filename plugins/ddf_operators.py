@@ -7,6 +7,8 @@ import os.path as osp
 from datetime import datetime, timedelta
 from pandas import to_datetime
 
+from ddf_utils.datapackage import dump_json, get_datapackage
+
 from airflow.exceptions import AirflowSkipException, AirflowException
 from airflow.models import Variable, TaskInstance
 from airflow.operators.bash_operator import BashOperator
@@ -14,9 +16,8 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.operators.sensors import BaseSensorOperator, ExternalTaskSensor
 from airflow.plugins_manager import AirflowPlugin
 from airflow.utils.decorators import apply_defaults
-from airflow.utils.db import provide_session
-from ddf_utils.datapackage import dump_json, get_datapackage
 from airflow.utils.state import State
+from airflow.utils.db import provide_session
 
 
 log = logging.getLogger(__name__)
@@ -176,9 +177,12 @@ class DependencyDatasetSensor(BaseSensorOperator):
 
     @apply_defaults
     def __init__(self, external_dag_id, external_task_id,
-                 execution_date=None, allowed_states=[State.SUCCESS], *args, **kwargs):
+                 execution_date=None,
+                 allowed_states=[State.SUCCESS, State.UPSTREAM_FAILED],
+                 not_allowed_states=[State.FAILED, State.UP_FOR_RETRY],
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.not_allowed_states = [State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED]
+        self.not_allowed_states = not_allowed_states
         self.allowed_states = allowed_states
         self.execution_date = execution_date
 
