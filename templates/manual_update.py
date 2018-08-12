@@ -22,6 +22,7 @@ default_args = {
     'priority_weight': {{ priority }},
     # 'end_date': datetime(2016, 1, 1),
     'poke_interval': 300
+    'execution_timeout': 60 * 60 * 6     # 6 hours
 }
 
 target_dataset = '{{ name }}'
@@ -37,7 +38,7 @@ sub_dag_id = dag_id + '.' + 'dependency_check'
 
 # now define the DAG
 dag = DAG(dag_id, default_args=default_args,
-          schedule_interval='10 0 * * *')
+          schedule_interval='30 0 * * *')
 
 
 def get_dep_task_time(n, minutes=0):

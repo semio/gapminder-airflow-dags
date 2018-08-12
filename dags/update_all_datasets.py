@@ -31,7 +31,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
     # 'queue': 'bash_queue',
     # 'pool': 'backfill',
-    'priority_weight': 99,
+    'priority_weight': 100,
     # 'end_date': datetime(2016, 1, 1),
 }
 
@@ -182,7 +182,7 @@ def refresh_dags(**context):
             p = 20
         else:
             template = env.get_template('manual_update.py')
-            p = 50
+            p = 20
 
         dag_name = dataset.replace('/', '_')
         dag_path = osp.join(airflow_home, 'dags', dag_name)
