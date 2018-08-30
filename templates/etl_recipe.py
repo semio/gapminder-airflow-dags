@@ -37,7 +37,7 @@ default_args = {
     'priority_weight': {{ priority }},
     # 'end_date': datetime(2016, 1, 1),
     'poke_interval': 60 * 10,  # 10 minutes
-    'execution_timeout': timedelta(hours=6)     # 6 hours
+    'execution_timeout': timedelta(hours=10)     # 10 hours
 }
 
 target_dataset = '{{ name }}'
