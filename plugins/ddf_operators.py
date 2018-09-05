@@ -172,6 +172,57 @@ class ValidateDatasetOperator(BashOperator):
                          *args, **kwargs)
 
 
+class ValidateDatasetDependOnGitOperator(BashOperator):
+    def __init__(self, dataset, logpath, *args, **kwargs):
+        bash_command = '''\
+        cd {{ params.dataset }}
+        LASTGITCOMMITDATE=`git log -1 --format=%at`
+        YESTERDAY=`date -d "yesterday" "+%s"`
+
+        run () {
+            DT=`date "+%Y-%m-%dT%H-%M-%S"`
+            VALIDATE_OUTPUT="validation-$DT.log"
+            echo "logfile: $VALIDATE_OUTPUT"
+            RES=`validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent --heap 8192 --multithread`
+            if [ $? -eq 0 ]
+            then
+                sleep 2
+                echo "validation succeed."
+                exit 0
+            else
+                sleep 2
+                echo $RES > $VALIDATE_OUTPUT
+                if [ `cat $VALIDATE_OUTPUT | wc -c` -ge 5 ]
+                then
+                    echo "validation not successful, moving the log file..."
+                    LOGPATH="{{ params.logpath }}/`basename {{ params.dataset }}`"
+                    if [ ! -d $LOGPATH ]; then
+                        mkdir $LOGPATH
+                    fi
+                    mv $VALIDATE_OUTPUT $LOGPATH
+                    exit 1
+                else
+                    echo "ddf-validation failed but no output."
+                    rm $VALIDATE_OUTPUT
+                    exit 1
+                fi
+            fi
+        }
+
+        if [ LASTGITCOMMITDATE -ge YESTERDAY ]
+        then
+            echo "there is new updates, need to validate"
+            run()
+        else
+            echo "no updates."
+            exit 0
+        '''
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset,
+                                 'logpath': logpath},
+                         *args, **kwargs)
+
+
 class DependencyDatasetSensor(BaseSensorOperator):
     """Sensor that wait for the dependency. If dependency failed, this sensor failed too."""
 
@@ -199,7 +250,7 @@ class DependencyDatasetSensor(BaseSensorOperator):
                 dt = to_datetime(dt)
 
         dt_today = datetime(dt.year, dt.month, dt.day, 0, 0, 0)
-        dt_start= dt_today - timedelta(days=30)                          # check tasks between 30 days ago
+        dt_start = dt_today - timedelta(days=30)                          # check tasks between 30 days ago
         dt_end = dt_today + timedelta(hours=23, minutes=59, seconds=59)  # and the end of today.
 
         log.info(
@@ -314,6 +365,7 @@ class DDFPlugin(AirflowPlugin):
                  GitMergeOperator,
                  GitPushOperator,
                  ValidateDatasetOperator,
+                 ValidateDatasetDependOnGitOperator,
                  RunETLOperator,
                  DependencyDatasetSensor,
                  GenerateDatapackageOperator]

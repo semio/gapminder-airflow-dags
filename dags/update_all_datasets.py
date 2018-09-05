@@ -124,12 +124,12 @@ def add_remove_datasets():
 
 def check_etl_type():
     current_datasets = os.listdir(osp.join(datasets_dir, 'open-numbers'))
-    datasets_types = dict(['open-numbers/'+k,
-                           list(_get_dataset_type('open-numbers/'+k))] for k in current_datasets)
+    datasets_types = dict(['open-numbers/' + k,
+                           list(_get_dataset_type('open-numbers/' + k))] for k in current_datasets)
 
     return {'current_datasets': datasets_types}
-            # 'addition': to_add,
-            # 'removal': list(to_remove)}
+    # 'addition': to_add,
+    # 'removal': list(to_remove)}
 
 
 def _get_dataset_type(dataset):
@@ -189,7 +189,7 @@ def refresh_dags(**context):
 
         dependencies = dict([d, current[d][0]] for d in dependencies)
 
-        with open(dag_path+'.py', 'w') as f:
+        with open(dag_path + '.py', 'w') as f:
             f.write(template.render(name=dataset,
                                     datetime=dt_str,
                                     priority=p,
