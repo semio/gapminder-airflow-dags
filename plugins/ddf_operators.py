@@ -209,10 +209,10 @@ class ValidateDatasetDependOnGitOperator(BashOperator):
             fi
         }
 
-        if [ LASTGITCOMMITDATE -ge YESTERDAY ]
+        if [ $LASTGITCOMMITDATE -ge $YESTERDAY ]
         then
             echo "there is new updates, need to validate"
-            run()
+            run
         else
             echo "no updates."
             exit 0
