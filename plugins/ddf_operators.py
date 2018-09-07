@@ -216,6 +216,7 @@ class ValidateDatasetDependOnGitOperator(BashOperator):
         else
             echo "no updates."
             exit 0
+        fi
         '''
         super().__init__(bash_command=bash_command,
                          params={'dataset': dataset,
