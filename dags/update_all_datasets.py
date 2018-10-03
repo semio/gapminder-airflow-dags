@@ -171,18 +171,20 @@ def refresh_dags(**context):
         else:
             dependencies = set()
 
-        now = datetime.utcnow() - timedelta(days=1)
-        dt_str = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
-
         if etl_type == 'recipe':
+            now = datetime.utcnow() - timedelta(days=1)
             template = env.get_template('etl_recipe.py')
             p = 20 - len(dependencies)  # The more dependencies, the less priority
         elif etl_type == 'python':
+            now = datetime.utcnow() - timedelta(days=7)
             template = env.get_template('etl_recipe.py')
             p = 20
         else:
+            now = datetime.utcnow() - timedelta(days=1)
             template = env.get_template('manual_update.py')
             p = 20
+
+        dt_str = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
 
         dag_name = dataset.replace('/', '_')
         dag_path = osp.join(airflow_home, 'dags', dag_name)
