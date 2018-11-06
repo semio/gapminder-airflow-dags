@@ -230,8 +230,8 @@ class DependencyDatasetSensor(BaseSensorOperator):
     @apply_defaults
     def __init__(self, external_dag_id, external_task_id,
                  execution_date=None,
-                 allowed_states=[State.SUCCESS, State.UPSTREAM_FAILED],
-                 not_allowed_states=[State.FAILED, State.UP_FOR_RETRY],
+                 allowed_states=[State.SUCCESS],
+                 not_allowed_states=[State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED],
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.not_allowed_states = not_allowed_states
