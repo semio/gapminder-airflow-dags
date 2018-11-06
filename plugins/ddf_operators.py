@@ -358,7 +358,7 @@ class LockDataPackageOperator(BaseSensorOperator):
 
 
 class DDFPlugin(AirflowPlugin):
-    name = "ddf plugin"
+    name = "ddf_plugin"
     operators = [LockDataPackageOperator,
                  UpdateSourceOperator,
                  GitCheckoutOperator,

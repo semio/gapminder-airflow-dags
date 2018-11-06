@@ -7,12 +7,12 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.models import Variable
-from airflow.operators import (GenerateDatapackageOperator,
-                               DependencyDatasetSensor,
-                               UpdateSourceOperator,
-                               GitCheckoutOperator, GitPushOperator,
-                               GitMergeOperator, RunETLOperator,
-                               ValidateDatasetOperator)
+from airflow.operators.ddf_plugin import (GenerateDatapackageOperator,
+                                          DependencyDatasetSensor,
+                                          UpdateSourceOperator,
+                                          GitCheckoutOperator, GitPushOperator,
+                                          GitMergeOperator, RunETLOperator,
+                                          ValidateDatasetOperator)
 from airflow.operators.subdag_operator import SubDagOperator
 
 from functools import partial

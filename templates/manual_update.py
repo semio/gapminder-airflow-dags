@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.models import Variable
-from airflow.operators import ValidateDatasetDependOnGitOperator, DependencyDatasetSensor
+from airflow.operators.ddf_plugin import ValidateDatasetDependOnGitOperator, DependencyDatasetSensor
 
 # steps:
 # validate the dataset and done.
