@@ -37,7 +37,8 @@ default_args = {
     'priority_weight': {{ priority }},
     # 'end_date': datetime(2016, 1, 1),
     'poke_interval': 60 * 10,  # 10 minutes
-    'execution_timeout': timedelta(hours=10)     # 10 hours
+    'execution_timeout': timedelta(hours=10),     # 10 hours
+    'weight_rule': 'absolute'
 }
 
 target_dataset = '{{ name }}'
@@ -73,7 +74,8 @@ def sub_dag():
         'retry_delay': timedelta(minutes=5),
         'poke_interval': 60 * 10,
         'timeout': 60 * 60 * 8,
-        'priority_weight': 0,
+        'priority_weight': {{ priority }},
+        'weight_rule': 'absolute',
         'pool': 'dependency_checking'
     }
     subdag = DAG(sub_dag_id, default_args=args, schedule_interval='@once')
@@ -88,7 +90,6 @@ def sub_dag():
     for dep in depends_on.keys():
         t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
                                     dag=subdag,
-                                    allowed_states=['success'],
                                     external_dag_id=dep.replace('/', '_'),
                                     external_task_id='validate')
         dep_tasks.append(t)

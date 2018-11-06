@@ -31,7 +31,8 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
     # 'queue': 'bash_queue',
     # 'pool': 'backfill',
-    'priority_weight': 100,
+    'priority_weight': 200,
+    'weight_rule': 'absolute'
     # 'end_date': datetime(2016, 1, 1),
 }
 
@@ -174,15 +175,15 @@ def refresh_dags(**context):
         if etl_type == 'recipe':
             now = datetime.utcnow() - timedelta(days=1)
             template = env.get_template('etl_recipe.py')
-            p = 20 - len(dependencies)  # The more dependencies, the less priority
+            p = 100 - len(dependencies)  # The more dependencies, the less priority
         elif etl_type == 'python':
             now = datetime.utcnow() - timedelta(days=7)
             template = env.get_template('etl_recipe.py')
-            p = 20
+            p = 100
         else:
             now = datetime.utcnow() - timedelta(days=1)
             template = env.get_template('manual_update.py')
-            p = 20
+            p = 100
 
         dt_str = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
 
