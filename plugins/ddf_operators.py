@@ -360,7 +360,6 @@ class LockDataPackageOperator(BaseSensorOperator):
 class DDFPlugin(AirflowPlugin):
     name = "ddf plugin"
     operators = [LockDataPackageOperator,
-                 DataPackageUpdatedSensor,
                  UpdateSourceOperator,
                  GitCheckoutOperator,
                  GitMergeOperator,
@@ -368,5 +367,6 @@ class DDFPlugin(AirflowPlugin):
                  ValidateDatasetOperator,
                  ValidateDatasetDependOnGitOperator,
                  RunETLOperator,
-                 DependencyDatasetSensor,
                  GenerateDatapackageOperator]
+    sensors = [DataPackageUpdatedSensor,
+               DependencyDatasetSensor]
