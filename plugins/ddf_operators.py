@@ -13,7 +13,7 @@ from airflow.exceptions import AirflowSkipException, AirflowException
 from airflow.models import Variable, TaskInstance
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.operators.sensors import BaseSensorOperator, ExternalTaskSensor
+from airflow.sensors import BaseSensorOperator
 from airflow.plugins_manager import AirflowPlugin
 from airflow.utils.decorators import apply_defaults
 from airflow.utils.state import State
