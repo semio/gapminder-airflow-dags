@@ -145,6 +145,26 @@ def _get_dataset_type(dataset):
     return out.stdout.decode('utf-8').replace('\n', '').split(',')
 
 
+def _get_denpendencies(dataset, all_datasets):
+    etl_type, fn = all_datasets[dataset]
+    if etl_type == 'recipe':
+        dataset_path = osp.join(datasets_dir, dataset)
+        etl_dir = osp.join(dataset_path, 'etl/scripts')
+        recipe = osp.join(etl_dir, fn)
+        logging.info("using recipe file: " + fn)
+        chef = Chef.from_recipe(recipe)
+        dependencies = list()
+        for i in chef.ingredients:
+            if i.ddf_id is not None:
+                dependencies.append(i.ddf_id)
+                for d in _get_denpendencies(i.ddf_id, all_datasets):
+                    dependencies.append(d)
+        logging.info("dependencies: {}".format(dependencies))
+        return dependencies
+    else:
+        return list()
+
+
 def refresh_dags(**context):
     """add/modify dags"""
     xcom = context['task_instance'].xcom_pull(task_ids='check_etl_type', key='return_value')
@@ -156,21 +176,8 @@ def refresh_dags(**context):
     def refresh_dag(dataset):
         # 1. get all dependencies from etl scripts
         # 2. re-generate the DAG, replace the old one
-        dataset_path = osp.join(datasets_dir, dataset)
-        etl_dir = osp.join(dataset_path, 'etl/scripts')
-        etl_type, fn = current[dataset]
-
-        if etl_type == 'recipe':
-            recipe = osp.join(etl_dir, fn)
-            logging.info("using recipe file: " + fn)
-            chef = Chef.from_recipe(recipe)
-            dependencies = set()
-            for i in chef.ingredients:
-                if i.ddf_id is not None and i.ddf_id.startswith('open-numbers'):
-                    dependencies.add(i.ddf_id)
-            logging.info("dependencies: {}".format(dependencies))
-        else:
-            dependencies = set()
+        dependencies = _get_denpendencies(dataset, current)
+        etl_type, _ = current[dataset]
 
         if etl_type == 'recipe':
             now = datetime.utcnow() - timedelta(days=1)
@@ -190,7 +197,8 @@ def refresh_dags(**context):
         dag_name = dataset.replace('/', '_')
         dag_path = osp.join(airflow_home, 'dags', dag_name)
 
-        dependencies = dict([d, current[d][0]] for d in dependencies)
+        # adding dependency checking dags, but don't consider non-open_numbers ones
+        dependencies = dict([d, current[d][0]] for d in dependencies if not d.startswith('open-numbers'))
 
         with open(dag_path + '.py', 'w') as f:
             f.write(template.render(name=dataset,
