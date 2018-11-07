@@ -146,7 +146,11 @@ def _get_dataset_type(dataset):
 
 
 def _get_denpendencies(dataset, all_datasets):
-    etl_type, fn = all_datasets[dataset]
+    try:
+        etl_type, fn = all_datasets[dataset]
+    except KeyError:  # not open_numbers datasets
+        return list()
+
     if etl_type == 'recipe':
         dataset_path = osp.join(datasets_dir, dataset)
         etl_dir = osp.join(dataset_path, 'etl/scripts')
