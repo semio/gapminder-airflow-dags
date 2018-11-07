@@ -145,7 +145,7 @@ def _get_dataset_type(dataset):
     return out.stdout.decode('utf-8').replace('\n', '').split(',')
 
 
-def _get_denpendencies(dataset, all_datasets):
+def _get_denpendencies(dataset, all_datasets, include_indirect=True):
     try:
         etl_type, fn = all_datasets[dataset]
     except KeyError:  # not open_numbers datasets
@@ -161,8 +161,10 @@ def _get_denpendencies(dataset, all_datasets):
         for i in chef.ingredients:
             if i.ddf_id is not None:
                 dependencies.append(i.ddf_id)
-                for d in _get_denpendencies(i.ddf_id, all_datasets):
-                    dependencies.append(d)
+                if include_indirect:
+                    for d in _get_denpendencies(i.ddf_id, all_datasets):
+                        dependencies.append(d)
+        dependencies = list(set(dependencies))
         logging.info("dependencies: {}".format(dependencies))
         return dependencies
     else:
@@ -202,14 +204,16 @@ def refresh_dags(**context):
         dag_path = osp.join(airflow_home, 'dags', dag_name)
 
         # adding dependency checking dags, but don't consider non-open_numbers ones
-        dependencies = dict([d, current[d][0]] for d in dependencies if not d.startswith('open-numbers'))
+        direct_deps = _get_denpendencies(dataset, current, include_indirect=False)
+        direct_deps = list(filter(lambda x: x.startswith('open-numbers'), direct_deps))
+        direct_deps = dict([d, current[d][0]] for d in direct_deps)
 
         with open(dag_path + '.py', 'w') as f:
             f.write(template.render(name=dataset,
                                     datetime=dt_str,
                                     priority=p,
                                     etl_type=etl_type,
-                                    dependencies=dependencies))
+                                    dependencies=direct_deps))
             f.close()
 
     for ds in current.keys():
