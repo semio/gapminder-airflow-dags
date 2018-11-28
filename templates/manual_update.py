@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.models import Variable
-from airflow.operators.ddf_plugin import ValidateDatasetDependOnGitOperator, DependencyDatasetSensor
+from airflow.operators.ddf_plugin import ValidateDatasetDependOnGitOperator, DependencyDatasetSensor, S3UploadOperator
 
 # steps:
 # validate the dataset and done.
@@ -31,6 +31,7 @@ target_dataset = '{{ name }}'
 # variables
 datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
+s3_datasets = [x.strip() for x in Variable.get('s3_datasets').split('\n')]
 
 logpath = osp.join(airflow_home, 'validation-log')
 out_dir = osp.join(datasets_dir, target_dataset)
@@ -58,3 +59,11 @@ validate_ddf = ValidateDatasetDependOnGitOperator(task_id='validate', dag=dag,
 
 # set dependencies
 dependency_task >> validate_ddf
+
+
+if target_dataset in s3_datasets:
+    bucket = f"s3://waffle-server-dev/{target_dataset}/master-HEAD/"
+    s3_upload = S3UploadOperator(dag=dag, task_id='upload_to_S3', dataset=out_dir,
+                                 branch='master', bucket=bucket)
+
+    s3_upload.set_upstream(validate_ddf)

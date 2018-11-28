@@ -172,6 +172,23 @@ class ValidateDatasetOperator(BashOperator):
                          *args, **kwargs)
 
 
+class S3UploadOperator(BashOperator):
+    """upload a dataset to the target bucket. We don't use S3 Hook because it doesn't support uploading directory yet."""
+    def __init__(self, dataset, branch, bucket, *args, **kwargs):
+        bash_command = '''\
+        set -eu
+        cd {{ params.dataset }}
+        git checkout {{ params.branch }}
+        aws s3 sync . {{ params.bucket_path }} --delete
+        '''
+
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset,
+                                 'branch': branch,
+                                 'bucket_path': bucket},
+                         *args, **kwargs)
+
+
 class ValidateDatasetDependOnGitOperator(BashOperator):
     def __init__(self, dataset, logpath, *args, **kwargs):
         bash_command = '''\
@@ -366,6 +383,7 @@ class DDFPlugin(AirflowPlugin):
                  GitPushOperator,
                  ValidateDatasetOperator,
                  ValidateDatasetDependOnGitOperator,
+                 S3UploadOperator,
                  RunETLOperator,
                  GenerateDatapackageOperator]
     sensors = [DataPackageUpdatedSensor,
