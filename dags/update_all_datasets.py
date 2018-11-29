@@ -201,7 +201,7 @@ def refresh_dags(**context):
         dt_str = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
 
         dag_name = dataset.replace('/', '_')
-        dag_path = osp.join(airflow_home, 'dags', dag_name)
+        dag_path = osp.join(airflow_home, 'dags', 'datasets', dag_name)
 
         # adding dependency checking dags, but don't consider non-open_numbers ones
         direct_deps = _get_denpendencies(dataset, current, include_indirect=False)
@@ -223,7 +223,7 @@ def refresh_dags(**context):
         dt_str = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
 
         dag_name = dataset.replace('/', '_') + '_production'
-        dag_path = osp.join(airflow_home, 'dags', dag_name)
+        dag_path = osp.join(airflow_home, 'dags', 'datasets', dag_name)
 
         with open(dag_path + '.py', 'w') as f:
             f.write(template.render(name=dataset,
@@ -239,19 +239,13 @@ def refresh_dags(**context):
             refresh_production_dag(ds)
 
 
-# 1. set DAG status to pause
-# 2. remove the DAG file
-# 3. TODO: remove all related info from airflow DB
+# command to remove all dags in a dir.
 remove_dag_command = '''\
 set -eu
 
 cd {{ params.dags_dir }}
 
-{% for dag_id in task_instance.xcom_pull(
-    task_ids='check_etl_type', key='return_value')['removal'] %}\
-airflow pause open-numbers_{{ dag_id }};
-rm {{ dag_id }}.py;
-{% endfor %}
+rm ./*.py
 
 '''
 
@@ -259,13 +253,13 @@ review_task = PythonOperator(task_id='add_remove_datasets',
                              dag=dag,
                              python_callable=add_remove_datasets)
 
+remove_task = BashOperator(task_id='remove_dags', dag=dag,
+                           bash_command=remove_dag_command,
+                           params={'dags_dir': osp.join(airflow_home, 'dags', 'datasets')})
+
 refresh_task = PythonOperator(task_id='refresh_dags', dag=dag,
                               provide_context=True,
                               python_callable=refresh_dags)
-
-remove_task = BashOperator(task_id='remove_dags', dag=dag,
-                           bash_command=remove_dag_command,
-                           params={'dags_dir': osp.join(airflow_home, 'dags')})
 
 git_pull_task = BashOperator(task_id='pull_branches',
                              bash_command=gitpull_template,
@@ -282,6 +276,7 @@ check_etl_type_task = PythonOperator(task_id='check_etl_type', dag=dag,
     review_task >>
     git_pull_task >>
     check_etl_type_task >>
-    refresh_task >>
-    remove_task
+    remove_task >>
+    refresh_task
+    # TODO: remove all unneeded DAGs info from airflow DB
 )

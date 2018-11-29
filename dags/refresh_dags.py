@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
-from airflow.exceptions import AirflowSkipException
+from airflow.operators.bash_operator import BashOperator
 from jinja2 import Environment, FileSystemLoader
 
 from ddf_utils.chef.api import Chef
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2018, 3, 15),
+    'start_date': datetime(2018, 11, 25),
     'retry_delay': timedelta(minutes=5),
     # 'queue': 'bash_queue',
     # 'pool': 'backfill',
@@ -104,7 +104,7 @@ def refresh_dags(**context):
         dt_str = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
 
         dag_name = dataset.replace('/', '_')
-        dag_path = osp.join(airflow_home, 'dags', dag_name)
+        dag_path = osp.join(airflow_home, 'dags', 'datasets', dag_name)
 
         # adding dependency checking dags, but don't consider non-open_numbers ones
         direct_deps = _get_denpendencies(dataset, current, include_indirect=False)
@@ -126,7 +126,7 @@ def refresh_dags(**context):
         dt_str = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
 
         dag_name = dataset.replace('/', '_') + '_production'
-        dag_path = osp.join(airflow_home, 'dags', dag_name)
+        dag_path = osp.join(airflow_home, 'dags', 'datasets', dag_name)
 
         with open(dag_path + '.py', 'w') as f:
             f.write(template.render(name=dataset,
@@ -142,6 +142,23 @@ def refresh_dags(**context):
             refresh_production_dag(ds)
 
 
+# command to remove all dags in a dir.
+remove_dag_command = '''\
+set -eu
+
+cd {{ params.dags_dir }}
+
+rm ./*.py
+
+'''
+
+remove_task = BashOperator(task_id='remove_dags', dag=dag,
+                           bash_command=remove_dag_command,
+                           params={'dags_dir': osp.join(airflow_home, 'dags', 'datasets')})
+
 refresh_task = PythonOperator(task_id='refresh_dags', dag=dag,
                               provide_context=True,
                               python_callable=refresh_dags)
+
+
+remove_task >> refresh_task
