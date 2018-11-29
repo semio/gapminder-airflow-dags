@@ -38,7 +38,7 @@ default_args = {
 
 datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
-# skipped_datasets = Variable.get('skipped_datasets', deserialize_json=True)
+s3_datasets = [x.strip() for x in Variable.get('s3_datasets').split('\n')]
 
 dag = DAG('update_all_datasets',
           default_args=default_args,
@@ -179,7 +179,7 @@ def refresh_dags(**context):
 
     env = Environment(loader=FileSystemLoader(osp.join(airflow_home, 'templates')))
 
-    def refresh_dag(dataset):
+    def refresh_normal_dag(dataset):
         # 1. get all dependencies from etl scripts
         # 2. re-generate the DAG, replace the old one
         dependencies = _get_denpendencies(dataset, current)
@@ -216,9 +216,27 @@ def refresh_dags(**context):
                                     dependencies=direct_deps))
             f.close()
 
+    def refresh_production_dag(dataset):
+        now = datetime.utcnow() - timedelta(days=1)
+        template = env.get_template('etl_recipe_production.py')
+        p = 100
+        dt_str = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
+
+        dag_name = dataset.replace('/', '_') + '_production'
+        dag_path = osp.join(airflow_home, 'dags', dag_name)
+
+        with open(dag_path + '.py', 'w') as f:
+            f.write(template.render(name=dataset,
+                                    datetime=dt_str,
+                                    priority=p))
+            f.close()
+
     for ds in current.keys():
         logging.info('checking {}'.format(ds))
-        refresh_dag(ds)
+        refresh_normal_dag(ds)
+
+        if ds in s3_datasets:
+            refresh_production_dag(ds)
 
 
 # 1. set DAG status to pause
