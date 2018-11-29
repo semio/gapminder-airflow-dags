@@ -91,7 +91,7 @@ git_push_task = GitPushOperator(task_id='git_push', dag=dag,
                                 pool='etl',
                                 dataset=out_dir)
 
-bucket = f"s3://waffle-server-dev/{target_dataset}/master/head/"
+bucket = f"s3://waffle-server/{target_dataset}/master/head/"
 s3_upload = S3UploadOperator(dag=dag, task_id='upload_to_S3', dataset=out_dir,
                              branch='master', bucket=bucket)
 
