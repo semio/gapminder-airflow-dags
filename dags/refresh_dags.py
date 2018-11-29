@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import os
 import os.path as osp
 import subprocess
 from datetime import datetime, timedelta
@@ -34,6 +35,16 @@ s3_datasets = [x.strip() for x in Variable.get('s3_datasets').split('\n')]
 dag = DAG('0-refresh_dags',
           default_args=default_args,
           schedule_interval='@once')
+
+
+def check_etl_type():
+    current_datasets = os.listdir(osp.join(datasets_dir, 'open-numbers'))
+    datasets_types = dict(['open-numbers/' + k,
+                           list(_get_dataset_type('open-numbers/' + k))] for k in current_datasets)
+
+    return {'current_datasets': datasets_types}
+    # 'addition': to_add,
+    # 'removal': list(to_remove)}
 
 
 def _get_dataset_type(dataset):
@@ -152,6 +163,10 @@ rm ./*.py
 
 '''
 
+# Define the DAG
+check_etl_type_task = PythonOperator(task_id='check_etl_type', dag=dag,
+                                     python_callable=check_etl_type)
+
 remove_task = BashOperator(task_id='remove_dags', dag=dag,
                            bash_command=remove_dag_command,
                            params={'dags_dir': osp.join(airflow_home, 'dags', 'datasets')})
@@ -161,4 +176,4 @@ refresh_task = PythonOperator(task_id='refresh_dags', dag=dag,
                               python_callable=refresh_dags)
 
 
-remove_task >> refresh_task
+check_etl_type_task >> remove_task >> refresh_task
