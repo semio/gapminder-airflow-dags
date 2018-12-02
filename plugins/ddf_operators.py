@@ -392,6 +392,7 @@ class DDFPlugin(AirflowPlugin):
                  GitCheckoutOperator,
                  GitMergeOperator,
                  GitPushOperator,
+                 GitResetOperator,
                  ValidateDatasetOperator,
                  ValidateDatasetDependOnGitOperator,
                  S3UploadOperator,

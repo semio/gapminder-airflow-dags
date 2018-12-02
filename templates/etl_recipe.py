@@ -12,6 +12,7 @@ from airflow.operators.ddf_plugin import (GenerateDatapackageOperator,
                                           UpdateSourceOperator,
                                           GitCheckoutOperator, GitPushOperator,
                                           GitMergeOperator, RunETLOperator,
+                                          GitResetOperator,
                                           S3UploadOperator, ValidateDatasetOperator)
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.executors.local_executor import LocalExecutor
