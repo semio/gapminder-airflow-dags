@@ -74,15 +74,15 @@ class UpdateSourceOperator(BashOperator):
 
 
 class GitCheckoutOperator(BashOperator):
-    def __init__(self, dataset, version, *args, **kwargs):
+    def __init__(self, dataset, branch, *args, **kwargs):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        git checkout {{ params.version }}
+        git checkout {{ params.branch }}
         '''
         super().__init__(bash_command=bash_command,
                          params={'dataset': dataset,
-                                 'version': version},
+                                 'branch': branch},
                          *args, **kwargs)
 
 
