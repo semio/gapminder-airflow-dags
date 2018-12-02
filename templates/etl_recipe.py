@@ -117,6 +117,8 @@ validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
 git_push_task = GitPushOperator(task_id='git_push', dag=dag,
                                 pool='etl',
                                 dataset=out_dir)
+# reseting the branch in case of anything failed
+cleanup_task = GitResetOperator(task_id='cleanup', dag=dag, dataset=out_dir, trigger_rule="all_done")
 
 
 # set dependencies

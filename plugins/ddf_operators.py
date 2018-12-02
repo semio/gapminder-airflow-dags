@@ -122,12 +122,23 @@ class GitPushOperator(BashOperator):
             if [[ $HAS_UPDATE -eq 1 ]]; then
                 git add datapackage.json
                 git commit -m "auto generated dataset"
+                git push -u origin
             else
                 echo "nothing to push"
             fi
-            git reset --hard
-            git push -u origin
         fi
+        '''
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset},
+                         *args, **kwargs)
+
+
+class GitResetOperator(BashOperator):
+    def __init__(self, dataset, *args, **kwargs):
+        bash_command = '''\
+        set -eu
+        cd {{ params.dataset }}
+        git reset --hard
         '''
         super().__init__(bash_command=bash_command,
                          params={'dataset': dataset},
