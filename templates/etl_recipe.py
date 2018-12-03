@@ -129,7 +129,8 @@ cleanup_task = GitResetOperator(task_id='cleanup', dag=dag, dataset=out_dir, tri
  recipe_task >>
  datapackage_task >>
  validate_ddf >>
- git_push_task)
+ git_push_task >>
+ cleanup_task)
 
 
 if target_dataset in s3_datasets:
