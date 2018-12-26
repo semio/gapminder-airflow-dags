@@ -7,7 +7,8 @@ import os.path as osp
 from datetime import datetime, timedelta
 from pandas import to_datetime
 
-from ddf_utils.datapackage import dump_json, get_datapackage
+from ddf_utils.io import dump_json
+from ddf_utils.model.package import DataPackage as DP
 
 from airflow.exceptions import AirflowSkipException, AirflowException
 from airflow.models import Variable, TaskInstance
@@ -26,7 +27,7 @@ log = logging.getLogger(__name__)
 class GenerateDatapackageOperator(PythonOperator):
     def __init__(self, dataset, *args, **kwargs):
         def _gen_dp(d):
-            dp = get_datapackage(d, update=True)
+            dp = DP.get_datapackage(d, update=True)
             dump_json(osp.join(dataset, 'datapackage.json'), dp)
 
         super().__init__(python_callable=_gen_dp,
