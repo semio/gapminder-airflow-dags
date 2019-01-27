@@ -155,7 +155,7 @@ def _get_denpendencies(dataset, all_datasets, include_indirect=True):
         etl_dir = osp.join(dataset_path, 'etl/scripts')
         recipe = osp.join(etl_dir, fn)
         logging.info("using recipe file: " + fn)
-        chef = Chef.from_recipe(recipe)
+        chef = Chef.from_recipe(recipe, ddf_dir=datasets_dir)
         dependencies = list()
         for i in chef.ingredients:
             if i.ddf_id is not None:
