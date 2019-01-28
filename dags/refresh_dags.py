@@ -59,7 +59,7 @@ def _get_dataset_type(dataset):
     return out.stdout.decode('utf-8').replace('\n', '').split(',')
 
 
-def _get_denpendencies(dataset, all_datasets, include_indirect=True):
+def _get_denpendencies(dataset, all_datasets, include_indirect=False):
     try:
         etl_type, fn = all_datasets[dataset]
     except KeyError:  # not open_numbers datasets
@@ -76,7 +76,7 @@ def _get_denpendencies(dataset, all_datasets, include_indirect=True):
             if i.ddf_id is not None:
                 dependencies.append(i.ddf_id)
                 if include_indirect:
-                    for d in _get_denpendencies(i.ddf_id, all_datasets):
+                    for d in _get_denpendencies(i.ddf_id, all_datasets, include_indirect=True):
                         dependencies.append(d)
         dependencies = list(set(dependencies))
         logging.info("dependencies: {}".format(dependencies))
