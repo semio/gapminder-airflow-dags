@@ -73,10 +73,10 @@ def _get_denpendencies(dataset, all_datasets, include_indirect=False):
         chef = Chef.from_recipe(recipe, ddf_dir=datasets_dir)
         dependencies = list()
         for i in chef.ingredients:
-            if i.ddf_id is not None:
-                dependencies.append(i.ddf_id)
+            if i.dataset is not None:
+                dependencies.append(i.dataset)
                 if include_indirect:
-                    for d in _get_denpendencies(i.ddf_id, all_datasets, include_indirect=True):
+                    for d in _get_denpendencies(i.dataset, all_datasets, include_indirect=True):
                         dependencies.append(d)
         dependencies = list(set(dependencies))
         logging.info("dependencies: {}".format(dependencies))
