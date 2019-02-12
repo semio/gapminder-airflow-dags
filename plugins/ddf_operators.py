@@ -209,7 +209,7 @@ class GCSUploadOperator(BashOperator):
         cd {{ params.dataset }}
         git checkout {{ params.branch }}
         HASH=`git rev-parse {{ params.branch }}`
-        gsutil -m rsync -r -j csv . {{ params.bucket_path }}/$HASH
+        gsutil -m rsync -r -j csv . "{{ params.bucket_path }}/$HASH"
         '''
 
         super().__init__(bash_command=bash_command,

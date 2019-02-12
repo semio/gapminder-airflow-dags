@@ -87,7 +87,7 @@ git_push_task = GitPushOperator(task_id='git_push', dag=dag,
                                 pool='etl',
                                 dataset=out_dir)
 
-bucket = f"gs://gapminder-ws-dev-ds-storage/{target_dataset}/master/"
+bucket = f"gs://gapminder-ws-dev-ds-storage/{target_dataset}/master"
 gcs_upload = GCSUploadOperator(dag=dag, task_id='upload_to_GCS', dataset=out_dir,
                                branch='master', bucket=bucket)
 
