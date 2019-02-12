@@ -12,7 +12,7 @@ from airflow.operators.ddf_plugin import (GenerateDatapackageOperator,
                                           UpdateSourceOperator,
                                           GitCheckoutOperator, GitPushOperator,
                                           GitMergeOperator, RunETLOperator,
-                                          S3UploadOperator, ValidateDatasetOperator)
+                                          GCSUploadOperator, ValidateDatasetOperator)
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.executors.local_executor import LocalExecutor
 
@@ -87,13 +87,13 @@ git_push_task = GitPushOperator(task_id='git_push', dag=dag,
                                 pool='etl',
                                 dataset=out_dir)
 
-bucket = f"s3://waffle-server/{target_dataset}/master/head/"
-s3_upload = S3UploadOperator(dag=dag, task_id='upload_to_S3', dataset=out_dir,
-                             branch='master', bucket=bucket)
+bucket = f"gs://gapminder-ws-dev-ds-storage/{target_dataset}/master/"
+gcs_upload = GCSUploadOperator(dag=dag, task_id='upload_to_GCS', dataset=out_dir,
+                               branch='master', bucket=bucket)
 
 # set dependencies
 (dependency_task >>
  # checkout_task >>
  git_merge_task >>
  git_push_task >>
- s3_upload)
+ gcs_upload)

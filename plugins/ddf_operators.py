@@ -201,6 +201,24 @@ class S3UploadOperator(BashOperator):
                          *args, **kwargs)
 
 
+class GCSUploadOperator(BashOperator):
+    """upload a dataset to the target bucket."""
+    def __init__(self, dataset, branch, bucket, *args, **kwargs):
+        bash_command = '''\
+        set -eu
+        cd {{ params.dataset }}
+        git checkout {{ params.branch }}
+        HASH=`git rev-parse {{ params.branch }}`
+        gsutil -m rsync -r -j csv . {{ params.bucket_path }}/$HASH
+        '''
+
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset,
+                                 'branch': branch,
+                                 'bucket_path': bucket},
+                         *args, **kwargs)
+
+
 class ValidateDatasetDependOnGitOperator(BashOperator):
     def __init__(self, dataset, logpath, *args, **kwargs):
         bash_command = '''\
@@ -397,6 +415,7 @@ class DDFPlugin(AirflowPlugin):
                  ValidateDatasetOperator,
                  ValidateDatasetDependOnGitOperator,
                  S3UploadOperator,
+                 GCSUploadOperator,
                  RunETLOperator,
                  GenerateDatapackageOperator]
     sensors = [DataPackageUpdatedSensor,
