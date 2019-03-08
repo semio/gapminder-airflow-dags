@@ -234,7 +234,7 @@ class CleanCFCacheOperator(BashOperator):
         super().__init__(bash_command=bash_command,
                          params={'cache_tags': cache_tags,
                                  'zone_id': zone_id},
-                         *args, **args)
+                         *args, **kwargs)
 
 
 class ValidateDatasetDependOnGitOperator(BashOperator):
