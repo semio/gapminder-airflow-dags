@@ -153,4 +153,4 @@ if target_dataset in s3_datasets:
 
     (git_push_task >> gcs_upload >> clean_cf_cache >> cleanup_task)
 else:
-    (git_push_task >> clean_df_cache >> cleanup_task)
+    (git_push_task >> clean_cf_cache >> cleanup_task)
