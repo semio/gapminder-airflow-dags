@@ -218,6 +218,25 @@ class GCSUploadOperator(BashOperator):
                          *args, **kwargs)
 
 
+class CleanCFCacheOperator(BashOperator):
+    """clean cloudflare cache for a zone and cache tag."""
+    def __init__(self, zone_id, cache_tags=None, *args, **kwargs):
+        if cache_tags:
+            bash_command = '''\
+            set -eu
+            cli4 --delete tags={{ params.cache_tags }} /zones/:{{ params.zone_id }}/purge_cache
+            '''
+        else:
+            bash_command = '''\
+            set -eu
+            cli4 --delete purge_everything=true /zones/:{{ params.zone_id }}/purge_cache
+            '''
+        super().__init__(bash_command=bash_command,
+                         params={'cache_tags': cache_tags,
+                                 'zone_id': zone_id},
+                         *args, **args)
+
+
 class ValidateDatasetDependOnGitOperator(BashOperator):
     def __init__(self, dataset, logpath, *args, **kwargs):
         bash_command = '''\
@@ -411,6 +430,7 @@ class DDFPlugin(AirflowPlugin):
                  GitMergeOperator,
                  GitPushOperator,
                  GitResetOperator,
+                 CleanCFCacheOperator,
                  ValidateDatasetOperator,
                  ValidateDatasetDependOnGitOperator,
                  S3UploadOperator,
