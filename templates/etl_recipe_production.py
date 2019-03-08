@@ -9,7 +9,7 @@ from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.ddf_plugin import (GenerateDatapackageOperator,
                                           DependencyDatasetSensor,
-                                          UpdateSourceOperator,
+                                          UpdateSourceOperator, CleanCFCacheOperator,
                                           GitCheckoutOperator, GitPushOperator,
                                           GitMergeOperator, RunETLOperator,
                                           GCSUploadOperator, ValidateDatasetOperator)
@@ -117,9 +117,13 @@ def gcs_subdag():
 
 gcs_upload = SubDagOperator(subdag=gcs_subdag(), task_id='upload_to_GCS', dag=dag, executor=LocalExecutor(parallelism=1))
 
+clean_cf_cache = CleanCFCacheOperator(dag=dag, task_id='clean_cf_cache', zone_id='gapminder.org',
+                                      cache_tags=['{}#master'.format(target_dataset)])
+
 # set dependencies
 (dependency_task >>
  # checkout_task >>
  git_merge_task >>
  git_push_task >>
- gcs_upload)
+ gcs_upload >>
+ clean_cf_cache)

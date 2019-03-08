@@ -12,7 +12,7 @@ from airflow.operators.ddf_plugin import (GenerateDatapackageOperator,
                                           UpdateSourceOperator,
                                           GitCheckoutOperator, GitPushOperator,
                                           GitMergeOperator, RunETLOperator,
-                                          GitResetOperator,
+                                          GitResetOperator, CleanCFCacheOperator,
                                           GCSUploadOperator, ValidateDatasetOperator)
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.executors.local_executor import LocalExecutor
@@ -121,6 +121,8 @@ git_push_task = GitPushOperator(task_id='git_push', dag=dag,
 # reseting the branch in case of anything failed
 cleanup_task = GitResetOperator(task_id='cleanup', dag=dag, dataset=out_dir, trigger_rule="all_done")
 
+# invalidate cloudflare cache
+clean_cf_cache = CleanCFCacheOperator(dag=dag, task_id='clean_cf_cache', zone_id='gapminderdev.org')
 
 # set dependencies
 (dependency_task >>
@@ -149,6 +151,6 @@ if target_dataset in s3_datasets:
 
     gcs_upload = SubDagOperator(subdag=gcs_subdag(), task_id='upload_to_GCS', dag=dag, executor=LocalExecutor(parallelism=1))
 
-    (git_push_task >> gcs_upload >> cleanup_task)
+    (git_push_task >> gcs_upload >> clean_cf_cache >> cleanup_task)
 else:
-    (git_push_task >> cleanup_task)
+    (git_push_task >> clean_df_cache >> cleanup_task)
