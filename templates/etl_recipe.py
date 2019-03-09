@@ -49,7 +49,7 @@ depends_on = {{ dependencies }}
 # variables
 datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
-s3_datasets = [x.strip() for x in Variable.get('s3_datasets').split('\n')]
+gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
 
 logpath = osp.join(airflow_home, 'validation-log')
 out_dir = osp.join(datasets_dir, target_dataset)
@@ -135,8 +135,7 @@ clean_cf_cache = CleanCFCacheOperator(dag=dag, task_id='clean_cf_cache', zone_id
  git_push_task)
 
 
-# TODO: rename s3 to gcs
-if target_dataset in s3_datasets:
+if target_dataset in gcs_datasets:
     def gcs_subdag():
         subdag_id = dag_id + '.' + 'upload_to_GCS'
         subdag = DAG(subdag_id, default_args=default_args, schedule_interval='@once')

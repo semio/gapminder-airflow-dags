@@ -30,7 +30,7 @@ default_args = {
 
 datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
-s3_datasets = [x.strip() for x in Variable.get('s3_datasets').split('\n')]
+gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
 
 dag = DAG('0-refresh_dags',
           default_args=default_args,
@@ -149,7 +149,7 @@ def refresh_dags(**context):
         logging.info('checking {}'.format(ds))
         refresh_normal_dag(ds)
 
-        if ds in s3_datasets:
+        if ds in gcs_datasets:
             refresh_production_dag(ds)
 
 
