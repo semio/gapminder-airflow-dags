@@ -208,7 +208,7 @@ class GCSUploadOperator(BashOperator):
         set -eu
         cd {{ params.dataset }}
         git checkout {{ params.branch }}
-        gsutil -m rsync -d -r -j csv -x '\.git.*$|etl/.*$' . "{{ params.bucket_path }}"
+        gsutil -h "Cache-Control: no-cache, no-store, must-revalidate" -m rsync -d -r -j csv -x '\.git.*$|etl/.*$' . "{{ params.bucket_path }}"
         '''
 
         super().__init__(bash_command=bash_command,
