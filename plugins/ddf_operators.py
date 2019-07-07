@@ -140,6 +140,7 @@ class GitResetOperator(BashOperator):
         set -eu
         cd {{ params.dataset }}
         git reset --hard
+        git clean -dfx
         '''
         super().__init__(bash_command=bash_command,
                          params={'dataset': dataset},
