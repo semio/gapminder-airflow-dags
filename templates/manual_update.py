@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.models import Variable
-from airflow.operators.ddf_plugin import (ValidateDatasetDependOnGitOperator,
+from airflow.operators.ddf_plugin import (ValidateDatasetOperator,
+                                          ValidateDatasetDependOnGitOperator,
                                           DependencyDatasetSensor,
                                           GCSUploadOperator)
 
@@ -54,10 +55,10 @@ dependency_task = DependencyDatasetSensor(task_id='update_datasets', dag=dag,
                                           external_dag_id='update_all_datasets',
                                           external_task_id='refresh_dags', pool='dependency_checking')
 
-validate_ddf = ValidateDatasetDependOnGitOperator(task_id='validate', dag=dag,
-                                                  pool='etl',
-                                                  dataset=out_dir,
-                                                  logpath=logpath)
+validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
+                                       pool='etl',
+                                       dataset=out_dir,
+                                       logpath=logpath)
 
 # set dependencies
 dependency_task >> validate_ddf
