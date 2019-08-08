@@ -13,7 +13,8 @@ from airflow.operators.ddf_plugin import (GenerateDatapackageOperator,
                                           GitCheckoutOperator, GitPushOperator,
                                           GitMergeOperator, RunETLOperator,
                                           GitResetOperator, CleanCFCacheOperator,
-                                          GCSUploadOperator, ValidateDatasetOperator)
+                                          GCSUploadOperator, ValidateDatasetOperator,
+                                          SlackReportOperator)
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.executors.local_executor import LocalExecutor
 
@@ -29,6 +30,12 @@ import logging
 # 6. validate-ddf
 # 7. if there are updates, push
 
+
+def slack_report(context):
+    task = SlackReportOperator(task_id='slack_report', http_conn_id='slack_connection', endpoint="test")
+    task.execute(context)
+
+
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -40,7 +47,8 @@ default_args = {
     # 'end_date': datetime(2016, 1, 1),
     'poke_interval': 60 * 10,  # 10 minutes
     'execution_timeout': timedelta(hours=10),     # 10 hours
-    'weight_rule': 'absolute'
+    'weight_rule': 'absolute',
+    'on_failure_callback': slack_report
 }
 
 target_dataset = '{{ name }}'

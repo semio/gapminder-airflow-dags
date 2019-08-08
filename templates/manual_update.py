@@ -10,10 +10,16 @@ from airflow.models import Variable
 from airflow.operators.ddf_plugin import (ValidateDatasetOperator,
                                           ValidateDatasetDependOnGitOperator,
                                           DependencyDatasetSensor,
-                                          GCSUploadOperator)
+                                          GCSUploadOperator, SlackReportOperator)
 
 # steps:
 # validate the dataset and done.
+
+
+def slack_report(context):
+    task = SlackReportOperator(task_id='slack_report', http_conn_id='slack_connection', endpoint="test")
+    task.execute(context)
+
 
 default_args = {
     'owner': 'airflow',
@@ -26,7 +32,8 @@ default_args = {
     'weight_rule': 'absolute',
     # 'end_date': datetime(2016, 1, 1),
     'poke_interval': 300,
-    'execution_timeout': timedelta(hours=10)     # 10 hours
+    'execution_timeout': timedelta(hours=10),     # 10 hours
+    'on_failure_callback': slack_report
 }
 
 target_dataset = '{{ name }}'
