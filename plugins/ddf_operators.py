@@ -7,6 +7,8 @@ import os.path as osp
 from datetime import datetime, timedelta
 from pandas import to_datetime
 
+from urllib.parse import urlencode, urljoin
+
 from ddf_utils.io import dump_json
 from ddf_utils.package import get_datapackage
 
@@ -15,6 +17,7 @@ from airflow.models import Variable, TaskInstance
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.sensors.base_sensor_operator import BaseSensorOperator
+from airflow.operators.http_operator import SimpleHttpOperator
 from airflow.plugins_manager import AirflowPlugin
 from airflow.utils.decorators import apply_defaults
 from airflow.utils.state import State
@@ -423,6 +426,73 @@ class LockDataPackageOperator(BaseSensorOperator):
             raise ValueError('op should be lock or unlock')
 
 
+class SlackReportOperator(SimpleHttpOperator):
+    """Operator to report a message to slack with default buttons"""
+
+    @apply_defaults
+    def __init__(self, status, airflow_baseurl, *args, **kwargs):
+        """report status of task in slack.
+
+        status: task status, possible values are same as task status in airflow
+        """
+        super(SlackReportOperator, self).__init__(*args, **kwargs)
+        self.status = status
+        self.airflow_baseurl = airflow_baseurl
+
+    def execute(self, context):
+        # overwrite self.data to custom message
+        dag_id = context['dag_run'].dag_id
+        task_id = context['ti'].task_id
+        ts = context['ts']
+        dataset = context['params'].get('dataset', None)
+
+        text = f"{dag_id}.{task_id}: {self.status}"
+        log_url = urljoin(self.airflow_baseurl, 'admin/airflow/log?',
+                          urlencode({'task_id': task_id, 'dag_id': dag_id, 'execution_date': ts, 'format': 'json'}))
+
+        blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": text
+                }
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Show log"
+                        },
+                        "url": log_url
+                    }
+                ]
+            }
+        ]
+
+        if dataset:
+            git_url = urljoin("https://github.com", dataset)
+            blocks[1]['elements'].append(
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "github"
+                    },
+                    "url": git_url
+                }
+            )
+
+        data = {"blocks": blocks}
+
+        self.data = data
+        self.log.info(data)
+        # super.execute(context)
+
+
 class DDFPlugin(AirflowPlugin):
     name = "ddf_plugin"
     operators = [LockDataPackageOperator,
@@ -437,6 +507,7 @@ class DDFPlugin(AirflowPlugin):
                  S3UploadOperator,
                  GCSUploadOperator,
                  RunETLOperator,
-                 GenerateDatapackageOperator]
+                 GenerateDatapackageOperator,
+                 SlackReportOperator]
     sensors = [DataPackageUpdatedSensor,
                DependencyDatasetSensor]
