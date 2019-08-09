@@ -487,7 +487,7 @@ class SlackReportOperator(SimpleHttpOperator):
             )
 
         data = {"blocks": blocks}
-        data = json.dump(data)
+        data = json.dumps(data)
 
         self.data = data
         self.log.info(data)
