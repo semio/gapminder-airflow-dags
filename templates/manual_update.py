@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.models import Variable
+from airflow.hooks.base_hook import BaseHook
 from airflow.operators.ddf_plugin import (ValidateDatasetOperator,
                                           ValidateDatasetDependOnGitOperator,
                                           DependencyDatasetSensor,
@@ -15,9 +16,25 @@ from airflow.operators.ddf_plugin import (ValidateDatasetOperator,
 # steps:
 # validate the dataset and done.
 
+# variables
+target_dataset = '{{ name }}'
+
+datasets_dir = Variable.get('datasets_dir')
+airflow_home = Variable.get('airflow_home')
+gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
+endpoint = BaseHook.get_connection('slack_connection').password
+airflow_baseurl = BaseHook.get_connection('airflow_web').host
+
+logpath = osp.join(airflow_home, 'validation-log')
+out_dir = osp.join(datasets_dir, target_dataset)
+dag_id = target_dataset.replace('/', '_')
+sub_dag_id = dag_id + '.' + 'dependency_check'
+
 
 def slack_report(context):
-    task = SlackReportOperator(task_id='slack_report', http_conn_id='slack_connection', endpoint="test")
+    task = SlackReportOperator(task_id='slack_report', http_conn_id='slack_connection',
+                               endpoint=endpoint, status='error', airflow_baseurl=airflow_baseurl)
+    context['target_dataset'] = '{{ name }}'
     task.execute(context)
 
 
@@ -35,18 +52,6 @@ default_args = {
     'execution_timeout': timedelta(hours=10),     # 10 hours
     'on_failure_callback': slack_report
 }
-
-target_dataset = '{{ name }}'
-
-# variables
-datasets_dir = Variable.get('datasets_dir')
-airflow_home = Variable.get('airflow_home')
-gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
-
-logpath = osp.join(airflow_home, 'validation-log')
-out_dir = osp.join(datasets_dir, target_dataset)
-dag_id = target_dataset.replace('/', '_')
-sub_dag_id = dag_id + '.' + 'dependency_check'
 
 # now define the DAG
 dag = DAG(dag_id, default_args=default_args,

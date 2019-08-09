@@ -7,12 +7,14 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.models import Variable
+from airflow.hooks.base_hook import BaseHook
 from airflow.operators.ddf_plugin import (GenerateDatapackageOperator,
                                           DependencyDatasetSensor,
                                           UpdateSourceOperator, CleanCFCacheOperator,
                                           GitCheckoutOperator, GitPushOperator,
                                           GitMergeOperator, RunETLOperator,
-                                          GCSUploadOperator, ValidateDatasetOperator)
+                                          GCSUploadOperator, ValidateDatasetOperator,
+                                          SlackReportOperator)
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.operators.bash_operator import BashOperator
 from airflow.executors.local_executor import LocalExecutor
@@ -25,6 +27,27 @@ import logging
 # - git push
 # - upload to S3
 
+# variables
+target_dataset = '{{ name }}'
+
+datasets_dir = Variable.get('datasets_dir')
+airflow_home = Variable.get('airflow_home')
+
+endpoint = BaseHook.get_connection('slack_connection').password
+airflow_baseurl = BaseHook.get_connection('airflow_web').host
+
+dag_id = target_dataset.replace('/', '_') + "_production"
+sub_dag_id = dag_id + '.' + 'dependency_check'
+out_dir = osp.join(datasets_dir, target_dataset)
+
+
+def slack_report(context):
+    task = SlackReportOperator(task_id='slack_report', http_conn_id='slack_connection',
+                               endpoint=endpoint, status='error', airflow_baseurl=airflow_baseurl)
+    context['target_dataset'] = '{{ name }}'
+    task.execute(context)
+
+
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -36,18 +59,9 @@ default_args = {
     # 'end_date': datetime(2016, 1, 1),
     'poke_interval': 60 * 10,  # 10 minutes
     'execution_timeout': timedelta(hours=10),     # 10 hours
-    'weight_rule': 'absolute'
+    'weight_rule': 'absolute',
+    'on_failure_callback': slack_report
 }
-
-target_dataset = '{{ name }}'
-
-# variables
-datasets_dir = Variable.get('datasets_dir')
-airflow_home = Variable.get('airflow_home')
-
-dag_id = target_dataset.replace('/', '_') + "_production"
-sub_dag_id = dag_id + '.' + 'dependency_check'
-out_dir = osp.join(datasets_dir, target_dataset)
 
 # now define the DAG
 schedule = '@once'

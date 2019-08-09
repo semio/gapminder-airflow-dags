@@ -444,7 +444,7 @@ class SlackReportOperator(SimpleHttpOperator):
         dag_id = context['dag_run'].dag_id
         task_id = context['ti'].task_id
         ts = context['ts']
-        dataset = context['params'].get('dataset', None)
+        dataset = context.get('target_dataset', None)
 
         text = f"{dag_id}.{task_id}: {self.status}"
         log_url = osp.join(self.airflow_baseurl, 'admin/airflow/log?')
