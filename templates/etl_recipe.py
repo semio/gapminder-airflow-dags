@@ -51,7 +51,7 @@ sub_dag_id = dag_id + '.' + 'dependency_check'
 
 def slack_report(context):
     task = SlackReportOperator(task_id='slack_report', http_conn_id='slack_connection',
-                               endpoint=endpoint, status='error', airflow_baseurl=airflow_baseurl)
+                               endpoint=endpoint, status='failed', airflow_baseurl=airflow_baseurl)
     context['target_dataset'] = '{{ name }}'
     task.execute(context)
 

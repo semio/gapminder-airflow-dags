@@ -480,7 +480,7 @@ class SlackReportOperator(SimpleHttpOperator):
                     "type": "button",
                     "text": {
                         "type": "plain_text",
-                        "text": "github"
+                        "text": "Github"
                     },
                     "url": git_url
                 }
