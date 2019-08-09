@@ -490,7 +490,7 @@ class SlackReportOperator(SimpleHttpOperator):
 
         self.data = data
         self.log.info(data)
-        super.execute(context)
+        super().execute(context)
 
 
 class DDFPlugin(AirflowPlugin):
