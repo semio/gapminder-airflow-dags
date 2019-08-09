@@ -2,6 +2,7 @@
 
 """{{ name }}"""
 
+import os
 import os.path as osp
 from datetime import datetime, timedelta
 
@@ -31,8 +32,17 @@ import logging
 # 7. if there are updates, push
 
 
+# variables
+datasets_dir = Variable.get('datasets_dir')
+airflow_home = Variable.get('airflow_home')
+gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
+endpoint = os.environ['SLACK_ENDPOINT']
+airflow_baseurl = os.environ['AIRFLOW_BASEURL']
+
+
 def slack_report(context):
-    task = SlackReportOperator(task_id='slack_report', http_conn_id='slack_connection', endpoint="test")
+    task = SlackReportOperator(task_id='slack_report', http_conn_id='slack_connection',
+                               endpoint=endpoint, status='error', airflow_baseurl=airflow_baseurl)
     task.execute(context)
 
 
@@ -53,11 +63,6 @@ default_args = {
 
 target_dataset = '{{ name }}'
 depends_on = {{ dependencies }}
-
-# variables
-datasets_dir = Variable.get('datasets_dir')
-airflow_home = Variable.get('airflow_home')
-gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
 
 logpath = osp.join(airflow_home, 'validation-log')
 out_dir = osp.join(datasets_dir, target_dataset)
