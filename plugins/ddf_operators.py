@@ -448,7 +448,7 @@ class SlackReportOperator(SimpleHttpOperator):
 
         text = f"{dag_id}.{task_id}: {self.status}"
         log_url = osp.join(self.airflow_baseurl, 'admin/airflow/log?')
-        log_url = log_url + urlencode({'task_id': task_id, 'dag_id': dag_id, 'execution_date': ts, 'format': 'json'}))
+        log_url = log_url + urlencode({'task_id': task_id, 'dag_id': dag_id, 'execution_date': ts, 'format': 'json'})
 
         blocks = [
             {
