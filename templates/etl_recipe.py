@@ -49,9 +49,9 @@ dag_id = target_dataset.replace('/', '_')
 sub_dag_id = dag_id + '.' + 'dependency_check'
 
 
-def slack_report(context):
+def slack_report(context, status):
     task = SlackReportOperator(task_id='slack_report', http_conn_id='slack_connection',
-                               endpoint=endpoint, status='failed', airflow_baseurl=airflow_baseurl)
+                               endpoint=endpoint, status=status, airflow_baseurl=airflow_baseurl)
     context['target_dataset'] = '{{ name }}'
     task.execute(context)
 
@@ -68,7 +68,7 @@ default_args = {
     'poke_interval': 60 * 10,  # 10 minutes
     'execution_timeout': timedelta(hours=10),     # 10 hours
     'weight_rule': 'absolute',
-    'on_failure_callback': slack_report
+    'on_failure_callback': partial(slack_report, status='failed')
 }
 
 # now define the DAG
@@ -130,9 +130,20 @@ validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
                                        pool='etl',
                                        dataset=out_dir,
                                        logpath=logpath)
+
+
+def git_push_callback(context):
+    ti = context['ti']
+    res = ti.xcom_pull(task_ids='git_push', dag_id=dag_id)
+    if "git updated." in res:
+        slack_report(context, status='new data')
+
+
 git_push_task = GitPushOperator(task_id='git_push', dag=dag,
                                 pool='etl',
-                                dataset=out_dir)
+                                dataset=out_dir,
+                                xcom_push=True,
+                                on_success_callback=git_push_callback)
 # reseting the branch in case of anything failed
 cleanup_task = GitResetOperator(task_id='cleanup', dag=dag, dataset=out_dir, trigger_rule="all_done")
 

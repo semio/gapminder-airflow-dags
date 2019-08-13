@@ -115,6 +115,7 @@ class GitPushOperator(BashOperator):
             git add .
             git commit -m "auto generated dataset"
             git push -u origin
+            echo "git updated."
         else
             HAS_UPDATE=0
             for f in $(git diff --name-only | grep -v datapackage.json); do
@@ -127,6 +128,7 @@ class GitPushOperator(BashOperator):
                 git add datapackage.json
                 git commit -m "auto generated dataset"
                 git push -u origin
+                echo "git updated."
             else
                 echo "nothing to push"
             fi
