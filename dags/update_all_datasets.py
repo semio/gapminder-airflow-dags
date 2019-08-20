@@ -18,6 +18,7 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import (BranchPythonOperator,
                                                PythonOperator)
 from airflow.exceptions import AirflowSkipException
+from airflow.api.client.local_client import Client
 from jinja2 import Environment, FileSystemLoader
 
 from ddf_utils.chef.api import Chef
@@ -120,6 +121,8 @@ def add_remove_datasets():
             # to_add.append(record['name'])
             os.system('git clone {} {}'.format(record['git_url'].replace('git://', 'git+ssh://git@'),
                                                path))
+    # return datasets that need to be removed from airflow DB
+    return list(to_remove)
 
 
 def check_etl_type():
@@ -128,8 +131,6 @@ def check_etl_type():
                            list(_get_dataset_type('open-numbers/' + k))] for k in current_datasets)
 
     return {'current_datasets': datasets_types}
-    # 'addition': to_add,
-    # 'removal': list(to_remove)}
 
 
 def _get_dataset_type(dataset):
@@ -171,11 +172,11 @@ def _get_denpendencies(dataset, all_datasets, include_indirect=True):
 
 
 def refresh_dags(**context):
-    """add/modify dags"""
-    xcom = context['task_instance'].xcom_pull(task_ids='check_etl_type', key='return_value')
-    current = xcom['current_datasets']
-    # to_remove = xcom['removal']  # TODO: add code to remove DAG from database.
-
+    """add/modify/remove dags"""
+    api_client = Client(api_base_url=None, auth=None)
+    xcom_current = context['task_instance'].xcom_pull(task_ids='check_etl_type', key='return_value')
+    current = xcom_current['current_datasets']
+    reomve = context['task_instance'].xcom_pull(task_ids='add_remove_datasets', key='return_value')
     env = Environment(loader=FileSystemLoader(osp.join(airflow_home, 'templates')))
 
     def refresh_normal_dag(dataset):
@@ -230,12 +231,20 @@ def refresh_dags(**context):
                                     priority=p))
             f.close()
 
+    def remove_dataset_from_db(dataset):
+        dag_name = dataset.replace('/', '_')
+        api_client.delete_dag(dag_id=dag_name)
+
     for ds in current.keys():
         logging.info('checking {}'.format(ds))
         refresh_normal_dag(ds)
 
         if ds in gcs_datasets:
             refresh_production_dag(ds)
+
+    for ds in remove:
+        logging.info('removing {} from Database'.format(ds))
+        remove_dataset_from_db(ds)
 
 
 # command to remove all dags in a dir.
@@ -277,5 +286,4 @@ check_etl_type_task = PythonOperator(task_id='check_etl_type', dag=dag,
     check_etl_type_task >>
     remove_task >>
     refresh_task
-    # TODO: remove all unneeded DAGs info from airflow DB
 )
