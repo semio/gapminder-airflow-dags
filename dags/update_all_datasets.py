@@ -174,7 +174,7 @@ def refresh_dags(**context):
     api_client = Client(api_base_url=None, auth=None)
     xcom_current = context['task_instance'].xcom_pull(task_ids='check_etl_type', key='return_value')
     current = xcom_current['current_datasets']
-    reomve = context['task_instance'].xcom_pull(task_ids='add_remove_datasets', key='return_value')
+    remove = context['task_instance'].xcom_pull(task_ids='add_remove_datasets', key='return_value')
     env = Environment(loader=FileSystemLoader(osp.join(airflow_home, 'templates')))
 
     def refresh_normal_dag(dataset):
