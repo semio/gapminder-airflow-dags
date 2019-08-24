@@ -21,18 +21,16 @@ default_args = {
     'depends_on_past': False,
     'start_date': datetime(2018, 11, 25),
     'retry_delay': timedelta(minutes=5),
-    # 'queue': 'bash_queue',
-    # 'pool': 'backfill',
     'priority_weight': 200,
-    'weight_rule': 'absolute'
-    # 'end_date': datetime(2016, 1, 1),
+    'weight_rule': 'absolute',
+    'catchup': False
 }
 
 datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
 gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
 
-dag = DAG('0-refresh_dags',
+dag = DAG('refresh_dags',
           default_args=default_args,
           schedule_interval='@once')
 
