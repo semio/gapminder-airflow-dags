@@ -119,5 +119,5 @@ git_push_task = BashOperator(task_id='git_push',
 (dependency_task >>
  # checkout_task >>
  git_merge_task >>
- git_push_task >>
+ git_push_task
 )
