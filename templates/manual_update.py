@@ -21,7 +21,7 @@ target_dataset = '{{ name }}'
 
 datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
-gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
+# gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
 endpoint = BaseHook.get_connection('slack_connection').password
 airflow_baseurl = BaseHook.get_connection('airflow_web').host
 

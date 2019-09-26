@@ -28,7 +28,7 @@ default_args = {
 
 datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
-gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
+gcs_datasets = [x.strip() for x in Variable.get('with_production').split('\n')]
 
 dag = DAG('refresh_dags',
           default_args=default_args,
