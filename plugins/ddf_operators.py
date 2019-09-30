@@ -342,9 +342,10 @@ class DependencyDatasetSensor(BaseSensorOperator):
 
         last_task = last_tasks.first()
 
-        log.info('task count between {} and {}: {}'.format(dt_start,
-                                                           dt_end,
-                                                           last_tasks.count()))
+        # log.info('task count between {} and {}: {}'.format(dt_start,
+        #                                                    dt_end,
+        #                                                    last_tasks.count()))
+        log.info("last task instance was executed on {}".format(last_task.execution_date))
 
         if last_task:
             if last_task.state in self.not_allowed_states:
