@@ -100,10 +100,10 @@ def sub_dag():
 
     dep_tasks = []
 
-    if etl_type != 'recipe':
-        update_datasets = DependencyDatasetSensor(task_id='update_datasets', dag=subdag,
-                                                  external_dag_id='update_all_datasets',
-                                                  external_task_id='refresh_dags')
+    # if etl_type != 'recipe':
+    #     update_datasets = DependencyDatasetSensor(task_id='update_datasets', dag=subdag,
+    #                                               external_dag_id='update_all_datasets',
+    #                                               external_task_id='refresh_dags')
 
     for dep in depends_on.keys():
         t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),

@@ -63,14 +63,11 @@ def get_dep_task_time(n, minutes=0):
     return newdate + timedelta(minutes=minutes)
 
 
-dependency_task = DependencyDatasetSensor(task_id='update_datasets', dag=dag,
-                                          external_dag_id='update_all_datasets',
-                                          external_task_id='refresh_dags', pool='dependency_checking')
+# dependency_task = DependencyDatasetSensor(task_id='update_datasets', dag=dag,
+#                                           external_dag_id='update_all_datasets',
+#                                           external_task_id='refresh_dags', pool='dependency_checking')
 
 validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
                                        pool='etl',
                                        dataset=out_dir,
                                        logpath=logpath)
-
-# set dependencies
-dependency_task >> validate_ddf
