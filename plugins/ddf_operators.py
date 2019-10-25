@@ -45,7 +45,7 @@ class RunETLOperator(BashOperator):
         set -eu
         export DATASETS_DIR={{ params.datasets_dir }}
         cd {{ params.dataset }}
-        ddf cleanup ddf .
+        ddf cleanup --exclude icon.png ddf .
 
         cd etl/scripts/
         python3 etl.py
