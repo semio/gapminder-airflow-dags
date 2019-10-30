@@ -83,6 +83,7 @@ class GitCheckoutOperator(BashOperator):
         set -eu
         cd {{ params.dataset }}
         git checkout {{ params.branch }}
+        git pull
         '''
         super().__init__(bash_command=bash_command,
                          params={'dataset': dataset,
