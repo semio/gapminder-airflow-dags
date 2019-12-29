@@ -105,11 +105,17 @@ def sub_dag():
     #                                               external_dag_id='update_all_datasets',
     #                                               external_task_id='refresh_dags')
 
-    for dep in depends_on.keys():
-        t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
-                                    dag=subdag,
-                                    external_dag_id=dep.replace('/', '_'),
-                                    external_task_id='validate')
+    for dep, dep_etl_type in depends_on.items():
+        if dep_etl_type[0] == 'manual':
+            t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
+                                        dag=subdag,
+                                        external_dag_id=dep.replace('/', '_'),
+                                        external_task_id='validate')
+        else:
+            t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
+                                        dag=subdag,
+                                        external_dag_id=dep.replace('/', '_'),
+                                        external_task_id='cleanup')
         dep_tasks.append(t)
 
     return subdag
