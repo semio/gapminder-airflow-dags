@@ -106,7 +106,7 @@ def sub_dag():
     #                                               external_task_id='refresh_dags')
 
     for dep, dep_etl_type in depends_on.items():
-        if dep_etl_type[0] == 'manual':
+        if dep_etl_type == 'manual':
             t = DependencyDatasetSensor(task_id='wait_for_{}'.format(dep).replace('/', '_'),
                                         dag=subdag,
                                         external_dag_id=dep.replace('/', '_'),
