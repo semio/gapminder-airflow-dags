@@ -153,6 +153,21 @@ class GitResetOperator(BashOperator):
                          *args, **kwargs)
 
 
+class GitResetAndGoMasterOperator(BashOperator):
+    """reset current head and then checkout master branch"""
+    def __init__(self, dataset, *args, **kwargs):
+        bash_command = '''\
+        set -eu
+        cd {{ params.dataset }}
+        git reset --hard
+        git clean -dfx
+        git checkout master
+        '''
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset},
+                         *args, **kwargs)
+
+
 class ValidateDatasetOperator(BashOperator):
     def __init__(self, dataset, logpath, *args, **kwargs):
         bash_command = '''\
@@ -506,6 +521,7 @@ class DDFPlugin(AirflowPlugin):
                  GitMergeOperator,
                  GitPushOperator,
                  GitResetOperator,
+                 GitResetAndGoMasterOperator,
                  CleanCFCacheOperator,
                  ValidateDatasetOperator,
                  ValidateDatasetDependOnGitOperator,
