@@ -14,7 +14,7 @@ from airflow.operators.ddf_plugin import (GenerateDatapackageOperator,
                                           UpdateSourceOperator,
                                           GitCheckoutOperator, GitPushOperator,
                                           GitMergeOperator, RunETLOperator,
-                                          GitResetOperator, CleanCFCacheOperator,
+                                          GitResetAndGoMasterOperator, CleanCFCacheOperator,
                                           GCSUploadOperator, ValidateDatasetOperator,
                                           SlackReportOperator)
 from airflow.operators.subdag_operator import SubDagOperator
@@ -149,7 +149,7 @@ git_push_task = GitPushOperator(task_id='git_push', dag=dag,
                                 xcom_push=True,
                                 on_success_callback=git_push_callback)
 # reseting the branch in case of anything failed
-cleanup_task = GitResetOperator(task_id='cleanup', dag=dag, dataset=out_dir, trigger_rule="all_done")
+cleanup_task = GitResetAndGoMasterOperator(task_id='cleanup', dag=dag, dataset=out_dir, trigger_rule="all_done")
 
 
 # set dependencies
