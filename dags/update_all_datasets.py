@@ -101,7 +101,8 @@ def add_remove_datasets():
 
     for rs in res_json:
         for r in rs:
-            all_repos.append(r)
+            if not r['archived']:
+                all_repos.append(r)
 
     # remove datasets
     existing_datasets = []
