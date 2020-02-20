@@ -83,6 +83,25 @@ for i in `ls`; do
 done
 '''
 
+git_checkmaster_template = '''\
+set -eu
+
+DIR={{ params.datasetpath }}
+
+cd $DIR/open-numbers
+
+for i in `ls`; do
+  cd "$i"
+  echo "updating: $i"
+
+  if [[ $(git branch -a | grep master | head -c1 | wc -c) -ne 0 ]]
+  then
+      git checkout master
+  fi
+done
+
+'''
+
 
 def add_remove_datasets():
     """load all datasets from open-numbers, add new datasets and remove closed ones"""
@@ -280,6 +299,13 @@ git_pull_task = BashOperator(task_id='pull_branches',
                              retry_delay=timedelta(seconds=10),
                              dag=dag)
 
+git_checkout_task = BashOperator(task_id='checkout_master_branches',
+                             bash_command=git_checkmaster_template,
+                             params={'datasetpath': datasets_dir},
+                             retries=3,
+                             retry_delay=timedelta(seconds=10),
+                             dag=dag)
+
 check_etl_type_task = PythonOperator(task_id='check_etl_type', dag=dag,
                                      python_callable=check_etl_type)
 
@@ -289,5 +315,6 @@ check_etl_type_task = PythonOperator(task_id='check_etl_type', dag=dag,
     git_pull_task >>
     check_etl_type_task >>
     remove_task >>
-    refresh_task
+    refresh_task >>
+    git_checkout_task
 )
