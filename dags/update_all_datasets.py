@@ -98,6 +98,7 @@ for i in `ls`; do
   then
       git checkout master
   fi
+  cd ..
 done
 
 '''
