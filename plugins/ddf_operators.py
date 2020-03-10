@@ -140,6 +140,41 @@ class GitPushOperator(BashOperator):
                          *args, **kwargs)
 
 
+class GitCommitOperator(BashOperator):
+    """Check if there are updates, And make a commit when necessary.
+
+    It will also push xcom when there is new commit.
+    """
+    def __init__(self, dataset, *args, **kwargs):
+        bash_command = '''\
+        set -eu
+        cd {{ params.dataset }}
+        if [[ $(git status -s | grep -e '^[? ][?D]' | head -c1 | wc -c) -ne 0 ]]; then
+            git add .
+            git commit -m "auto generated dataset"
+            echo "{{ ti.xcom_push(key="new_commit", val=1) }}"
+        else
+            HAS_UPDATE=0
+            for f in $(git diff --name-only | grep -v datapackage.json); do
+                if [[ $(git diff $f | tail -n +5 | grep -e "^[++|\-\-]" | head -c1 | wc -c) -ne 0 ]]; then
+                    HAS_UPDATE=1
+                    git add $f
+                fi
+            done
+            if [[ $HAS_UPDATE -eq 1 ]]; then
+                git add datapackage.json
+                git commit -m "auto generated dataset"
+                echo "{{ ti.xcom_push(key="new_commit", val=1) }}"
+            else
+                echo "{{ ti.xcom_push(key="new_commit", val=0) }}"
+            fi
+        fi
+        '''
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset},
+                         *args, **kwargs)
+
+
 class GitResetOperator(BashOperator):
     def __init__(self, dataset, *args, **kwargs):
         bash_command = '''\
@@ -520,6 +555,7 @@ class DDFPlugin(AirflowPlugin):
                  GitCheckoutOperator,
                  GitMergeOperator,
                  GitPushOperator,
+                 GitCommitOperator,
                  GitResetOperator,
                  GitResetAndGoMasterOperator,
                  CleanCFCacheOperator,
