@@ -152,7 +152,7 @@ class GitCommitOperator(BashOperator):
         if [[ $(git status -s | grep -e '^[? ][?D]' | head -c1 | wc -c) -ne 0 ]]; then
             git add .
             git commit -m "auto generated dataset"
-            echo "{{ ti.xcom_push(key="new_commit", value=1) }}"
+            echo "git updated"
         else
             HAS_UPDATE=0
             for f in $(git diff --name-only | grep -v datapackage.json); do
@@ -164,9 +164,9 @@ class GitCommitOperator(BashOperator):
             if [[ $HAS_UPDATE -eq 1 ]]; then
                 git add datapackage.json
                 git commit -m "auto generated dataset"
-                echo "{{ ti.xcom_push(key="new_commit", value=1) }}"
+                echo "git updated"
             else
-                echo "{{ ti.xcom_push(key="new_commit", value=0) }}"
+                echo "nothing new"
             fi
         fi
         '''
