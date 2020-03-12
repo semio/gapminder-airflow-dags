@@ -144,7 +144,7 @@ git_commit_task = GitCommitOperator(task_id='git_commit', dag=dag,
 def check_new_commit(**kwargs):
     ti = kwargs['ti']
     dag_id = ti.dag_id
-    res = ti.xcom_pull(task_ids='testgit', dag_id=dag_id)
+    res = ti.xcom_pull(task_ids='git_commit', dag_id=dag_id)
     if "git updated" in res:
         return "merge_into_master"
     return "cleanup"
