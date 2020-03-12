@@ -108,7 +108,7 @@ class GitMergeOperator(BashOperator):
 
 class GitPushOperator(BashOperator):
     """Check if there are updates, And push when necessary"""
-    def __init__(self, dataset, push_all, *args, **kwargs):
+    def __init__(self, dataset, push_all=False, *args, **kwargs):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
