@@ -112,7 +112,7 @@ class GitPushOperator(BashOperator):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        {% if push_all %}
+        {% if push_all is sameas true %}
         git push --all -u origin
         {% else %}
         git push -u origin
