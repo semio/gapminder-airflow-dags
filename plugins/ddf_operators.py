@@ -191,7 +191,7 @@ class ValidateDatasetOperator(BashOperator):
         bash_command = '''\
         cd {{ params.dataset }}
         DT=`date "+%Y-%m-%dT%H-%M-%S"`
-        VALIDATE_OUTPUT="validation-$DT.log"
+        VALIDATE_OUTPUT="validation-$DT.json"
         echo "logfile: $VALIDATE_OUTPUT"
         RES=`validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent --heap 8192 --multithread`
         if [ $? -eq 0 ]
