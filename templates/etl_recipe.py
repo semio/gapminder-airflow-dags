@@ -146,7 +146,7 @@ def check_new_commit(**kwargs):
     dag_id = ti.dag_id
     res = ti.xcom_pull(task_ids='git_commit', dag_id=dag_id)
     if "git updated" in res:
-        return "merge_into_master"
+        return "git_push"
     return "cleanup"
 
 
