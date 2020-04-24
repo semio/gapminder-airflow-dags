@@ -313,6 +313,7 @@ git_checkout_task = BashOperator(task_id='checkout_master_branches',
                              params={'datasetpath': datasets_dir},
                              retries=3,
                              retry_delay=timedelta(seconds=10),
+                             trigger_rule="all_done",
                              dag=dag)
 
 check_etl_type_task = PythonOperator(task_id='check_etl_type', dag=dag,
