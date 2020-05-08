@@ -210,6 +210,8 @@ class ValidateDatasetOperator(BashOperator):
                     mkdir $LOGPATH
                 fi
                 mv $VALIDATE_OUTPUT $LOGPATH
+                LOGURL = "http://159.89.2.170:8081/`basename {{ params.dataset }}`/$VALIDATE_OUTPUT"
+                echo "you can access the log at $LOGURL"
                 exit 1
             else
                 echo "ddf-validation failed but no output."
