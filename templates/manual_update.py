@@ -54,8 +54,10 @@ default_args = {
 }
 
 # now define the DAG
+schedule = {{ schedule }}
+
 dag = DAG(dag_id, default_args=default_args,
-          schedule_interval='30 0 * * *')
+          schedule_interval=schedule)
 
 
 def get_dep_task_time(n, minutes=0):

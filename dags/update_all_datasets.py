@@ -39,6 +39,7 @@ datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
 gcs_datasets = [x.strip() for x in Variable.get('with_production').split('\n')]
 auto_datasets = [x.strip() for x in Variable.get('automatic_datasets').split('\n')]
+custom_schedule = Variable.get('custom_schedule', deserialize_json=True)
 
 dag = DAG('update_all_datasets',
           default_args=default_args,
@@ -230,6 +231,16 @@ def refresh_dags(**context):
             template = env.get_template('manual_update.py')
             p = 100
 
+        # config schedule
+        schedule = custom_schedule.get(dataset, None)
+        if not schedule:
+            if etl_type == 'recipe':
+                schedule = '0 12 * * *'   # recipe datasets: 12:00 everyday
+            elif etl_type == 'python'
+                schedule = '0 1 * * 0'    # source datasets: 1:00 every Sunday
+            else:
+                schedule = '0 30 * * *'   # manual datasets: 0:30 everyday
+
         dt_str = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
 
         dag_name = dataset.replace('/', '_')
@@ -242,6 +253,7 @@ def refresh_dags(**context):
 
         with open(dag_path + '.py', 'w') as f:
             f.write(template.render(name=dataset,
+                                    schedule=schedule,
                                     datetime=dt_str,
                                     priority=p,
                                     etl_type=etl_type,
