@@ -236,7 +236,7 @@ def refresh_dags(**context):
         if not schedule:
             if etl_type == 'recipe':
                 schedule = '0 12 * * *'   # recipe datasets: 12:00 everyday
-            elif etl_type == 'python'
+            elif etl_type == 'python':
                 schedule = '0 1 * * 0'    # source datasets: 1:00 every Sunday
             else:
                 schedule = '0 30 * * *'   # manual datasets: 0:30 everyday
