@@ -127,7 +127,7 @@ def refresh_dags(**context):
             elif etl_type == 'python':
                 schedule = '0 1 * * 0'    # source datasets: 1:00 every Sunday
             else:
-                schedule = '0 30 * * *'   # manual datasets: 0:30 everyday
+                schedule = '30 0 * * *'   # manual datasets: 0:30 everyday
 
         dt_str = 'datetime({}, {}, {})'.format(now.year, now.month, now.day)
 
