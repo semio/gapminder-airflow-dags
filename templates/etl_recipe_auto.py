@@ -75,11 +75,7 @@ default_args = {
 # now define the DAG
 etl_type = "{{ etl_type }}"
 
-{% if etl_type == 'recipe' %}
-schedule = '0 12 * * *'   # recipe datasets: 12:00 everyday
-{% else %}
-schedule = '0 1 * * 0'    # source datasets: 1:00 every Sunday
-{% endif %}
+schedule = "{{ schedule }}"
 
 dag = DAG(dag_id, default_args=default_args,
           schedule_interval=schedule)

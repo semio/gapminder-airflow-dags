@@ -54,7 +54,7 @@ default_args = {
 }
 
 # now define the DAG
-schedule = {{ schedule }}
+schedule = "{{ schedule }}"
 
 dag = DAG(dag_id, default_args=default_args,
           schedule_interval=schedule)
