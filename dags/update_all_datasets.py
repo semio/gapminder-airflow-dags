@@ -112,12 +112,12 @@ def add_remove_datasets():
     url = 'https://api.github.com/orgs/open-numbers/repos?per_page=100'
     res = requests.get(url)
     res_json = [res.json()]
-    next_link = res.headers.get('Link')
+    next_link = res.links.get('next')
 
     while next_link is not None:
-        url = next_link.split(';')[0][1:-1]
+        url = next_link['url']
         res = requests.get(url)
-        next_link = res.headers.get('Link')
+        next_link = res.links.get('next')
         res_json.append(res.json())
 
     all_repos = []
