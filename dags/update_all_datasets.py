@@ -124,6 +124,9 @@ def add_remove_datasets():
 
     for rs in res_json:
         for r in rs:
+            if type(r) != dict:
+                print(f"skipped record because it's not a dictionary: {r}")
+                continue
             if not r['archived']:
                 all_repos.append(r)
 
