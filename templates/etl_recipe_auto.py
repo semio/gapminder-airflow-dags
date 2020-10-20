@@ -20,6 +20,7 @@ from airflow.operators.ddf_plugin import (GenerateDatapackageOperator,
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.operators.python_operator import BranchPythonOperator
 from airflow.executors.local_executor import LocalExecutor
+from airflow.operators.dummy_operator import DummyOperator
 
 from functools import partial
 import logging
@@ -143,7 +144,7 @@ def check_new_commit(**kwargs):
     res = ti.xcom_pull(task_ids='git_commit', dag_id=dag_id)
     if "git updated" in res:
         return "merge_into_master"
-    return "cleanup"
+    return "do_nothing"
 
 
 branch_task = BranchPythonOperator(task_id='check_new_commit', dag=dag,
@@ -189,6 +190,7 @@ if len(depends_on) > 0:
 )
 
 # commit
+do_nothing = DummyOperator(task_id='do_nothing', dag=dag)
 git_commit_task >> branch_task
 branch_task >> git_merge_task >> git_push_task >> cleanup_task
-branch_task >> cleanup_task
+branch_task >> do_nothing >> cleanup_task
