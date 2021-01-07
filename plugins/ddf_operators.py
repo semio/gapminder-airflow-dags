@@ -184,7 +184,7 @@ class GitResetAndGoMasterOperator(BashOperator):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        export BRANCH=`git branch --show-current`
+        export BRANCH=`git rev-parse --abbrev-ref HEAD`
         case $BRANCH in
             master | develop)
                 git reset --hard origin/$BRAHCN
