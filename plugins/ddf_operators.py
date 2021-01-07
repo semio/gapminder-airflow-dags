@@ -164,7 +164,8 @@ class GitResetOperator(BashOperator):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        git reset --hard
+        export COMMIT=`git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"`
+        git reset --hard $COMMIT
         git clean -dfx
         '''
         super().__init__(bash_command=bash_command,
@@ -178,7 +179,8 @@ class GitResetAndGoMasterOperator(BashOperator):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
-        git reset --hard
+        export COMMIT=`git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"`
+        git reset --hard $COMMIT
         git clean -dfx
         git checkout master
         '''
