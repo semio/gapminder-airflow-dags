@@ -188,6 +188,7 @@ class GitResetAndGoMasterOperator(BashOperator):
         git reset --hard $COMMIT
         git clean -dfx
         git checkout master
+        git reset --hard origin/master
         '''
         super().__init__(bash_command=bash_command,
                          params={'dataset': dataset},
