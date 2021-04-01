@@ -63,7 +63,7 @@ echo "ENABLE_DELETE:        '${ENABLE_DELETE}'"
 
 echo ""
 echo "Running Cleanup Process..."
-FIND_STATEMENT="find ${DIRECTORY} -mtime +${MAX_AGE_IN_DAYS} -user ${AIRFLOW_USER} -maxdepth 1"
+FIND_STATEMENT="find ${DIRECTORY} -maxdepth 1 -mtime +${MAX_AGE_IN_DAYS} -user ${AIRFLOW_USER}"
 DELETE_STMT="${FIND_STATEMENT} -exec rm -rf {} \;"
 
 echo "Executing Find Statement: ${FIND_STATEMENT}"
