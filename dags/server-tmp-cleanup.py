@@ -45,7 +45,10 @@ if hasattr(dag, 'catchup'):
 
 tmp_cleanup = """
 echo "Getting Configurations..."
+DIRECTORY="{{params.directory}}"
 MAX_AGE_IN_DAYS="{{dag_run.conf.maxTmpAgeInDays}}"
+AIRFLOW_USER='""" + str(AIRFLOW_USER) + """'
+
 if [ "${MAX_AGE_IN_DAYS}" == "" ]; then
     echo "maxTmpAgeInDays conf variable isn't included. Using Default '""" + str(DEFAULT_MAX_AGE_IN_DAYS) + """'."
     MAX_AGE_IN_DAYS='""" + str(DEFAULT_MAX_AGE_IN_DAYS) + """'
@@ -60,7 +63,7 @@ echo "ENABLE_DELETE:        '${ENABLE_DELETE}'"
 
 echo ""
 echo "Running Cleanup Process..."
-FIND_STATEMENT="find ${params.directory} -mtime +${MAX_AGE_IN_DAYS} -user ${AIRFLOW_USER} -maxdepth 1"
+FIND_STATEMENT="find ${DIRECTORY} -mtime +${MAX_AGE_IN_DAYS} -user ${AIRFLOW_USER} -maxdepth 1"
 DELETE_STMT="${FIND_STATEMENT} -exec rm -rf {} \;"
 
 echo "Executing Find Statement: ${FIND_STATEMENT}"
