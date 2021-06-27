@@ -84,11 +84,23 @@ class GitCheckoutOperator(BashOperator):
         set -eu
         cd {{ params.dataset }}
         git checkout {{ params.branch }}
-        git pull
         '''
         super().__init__(bash_command=bash_command,
                          params={'dataset': dataset,
                                  'branch': branch},
+                         *args, **kwargs)
+
+
+class GitPullOperator(BashOperator):
+    def __init__(self, dataset, branch, *args, **kwargs):
+        bash_command = '''\
+        set -eu
+        cd {{ params.dataset }}
+        git pull
+        git submodule foreach git pull
+        '''
+        super().__init__(bash_command=bash_command,
+                         params={'dataset': dataset},
                          *args, **kwargs)
 
 
