@@ -11,7 +11,8 @@ from airflow.hooks.base_hook import BaseHook
 from airflow.operators.ddf_plugin import (ValidateDatasetOperator,
                                           ValidateDatasetDependOnGitOperator,
                                           DependencyDatasetSensor,
-                                          GCSUploadOperator, SlackReportOperator)
+                                          GCSUploadOperator, SlackReportOperator,
+                                          GitPullOperator)
 
 # steps:
 # validate the dataset and done.
@@ -69,7 +70,11 @@ def get_dep_task_time(n, minutes=0):
 #                                           external_dag_id='update_all_datasets',
 #                                           external_task_id='refresh_dags', pool='dependency_checking')
 
+git_pull = GitPullOperator(task_id='git_pull', dag=dag, dataset=out_dir)
+
 validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
                                        pool='etl',
                                        dataset=out_dir,
                                        logpath=logpath)
+
+git_pull >> validate_ddf
