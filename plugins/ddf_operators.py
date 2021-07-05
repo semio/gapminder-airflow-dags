@@ -75,6 +75,7 @@ class UpdateSourceOperator(BashOperator):
         super().__init__(bash_command=bash_command,
                          params={'dataset': dataset,
                                  'datasets_dir': Variable.get('datasets_dir')},
+                         env={'GSPREAD_PANDAS_CONFIG_DIR': Variable.get('GSPREAD_PANDAS_CONFIG_DIR')},
                          *args, **kwargs)
 
 
