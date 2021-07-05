@@ -93,7 +93,7 @@ class GitCheckoutOperator(BashOperator):
 
 
 class GitPullOperator(BashOperator):
-    def __init__(self, dataset, branch, *args, **kwargs):
+    def __init__(self, dataset, *args, **kwargs):
         bash_command = '''\
         set -eu
         cd {{ params.dataset }}
