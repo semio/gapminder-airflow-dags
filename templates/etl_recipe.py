@@ -165,7 +165,7 @@ cleanup_task = GitResetAndGoMasterOperator(task_id='cleanup', dag=dag, dataset=o
 # set dependencies
 if len(depends_on) > 0:
     dependency_task = SubDagOperator(subdag=sub_dag(), task_id='dependency_check', on_failure_callback=None,
-                                     dag=dag, executor=LocalExecutor(parallelism=2))
+                                     dag=dag)
     dependency_task >> checkout_task
 
 # etl
