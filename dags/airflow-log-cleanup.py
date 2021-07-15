@@ -15,7 +15,7 @@ import airflow
 
 DAG_ID = os.path.basename(__file__).replace(".pyc", "").replace(".py", "")  # airflow-log-cleanup
 START_DATE = airflow.utils.dates.days_ago(1)
-BASE_LOG_FOLDER = conf.get("core", "BASE_LOG_FOLDER")
+BASE_LOG_FOLDER = conf.get("logging", "BASE_LOG_FOLDER")
 SCHEDULE_INTERVAL = "@daily"        # How often to Run. @daily - Once a day at Midnight
 DAG_OWNER_NAME = "airflow"          # Who is listed as the owner of this DAG in the Airflow Web Server
 ALERT_EMAIL_ADDRESSES = []          # List of email address to send email alerts to if this job fails
