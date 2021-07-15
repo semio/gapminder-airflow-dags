@@ -133,7 +133,7 @@ validate_ddf = ValidateDatasetOperator(task_id='validate', dag=dag,
 
 
 git_commit_task = GitCommitOperator(task_id='git_commit', dag=dag,
-                                    pool='etl', dataset=out_dir, xcom_push=True)
+                                    pool='etl', dataset=out_dir)
 
 
 def check_new_commit(**kwargs):
