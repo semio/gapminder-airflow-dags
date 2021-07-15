@@ -18,7 +18,6 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.sensors.base_sensor_operator import BaseSensorOperator
 from airflow.operators.http_operator import SimpleHttpOperator
-from airflow.plugins_manager import AirflowPlugin
 from airflow.utils.decorators import apply_defaults
 from airflow.utils.state import State
 from airflow.utils.db import provide_session
@@ -560,26 +559,3 @@ class SlackReportOperator(SimpleHttpOperator):
         self.data = data
         self.log.info(data)
         super().execute(context)
-
-
-class DDFPlugin(AirflowPlugin):
-    name = "ddf_plugin"
-    operators = [LockDataPackageOperator,
-                 UpdateSourceOperator,
-                 GitCheckoutOperator,
-                 GitMergeOperator,
-                 GitPushOperator,
-                 GitPullOperator,
-                 GitCommitOperator,
-                 GitResetOperator,
-                 GitResetAndGoMasterOperator,
-                 CleanCFCacheOperator,
-                 ValidateDatasetOperator,
-                 ValidateDatasetDependOnGitOperator,
-                 S3UploadOperator,
-                 GCSUploadOperator,
-                 RunETLOperator,
-                 GenerateDatapackageOperator,
-                 SlackReportOperator]
-    sensors = [DataPackageUpdatedSensor,
-               DependencyDatasetSensor]

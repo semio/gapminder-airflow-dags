@@ -8,11 +8,11 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.models import Variable
 from airflow.hooks.base_hook import BaseHook
-from airflow.operators.ddf_plugin import (ValidateDatasetOperator,
-                                          ValidateDatasetDependOnGitOperator,
-                                          DependencyDatasetSensor,
-                                          GCSUploadOperator, SlackReportOperator,
-                                          GitPullOperator)
+from ddf_operators import (ValidateDatasetOperator,
+                           ValidateDatasetDependOnGitOperator,
+                           DependencyDatasetSensor,
+                           GCSUploadOperator, SlackReportOperator,
+                           GitPullOperator)
 
 # steps:
 # validate the dataset and done.

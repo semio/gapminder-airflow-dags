@@ -9,14 +9,14 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.models import Variable
 from airflow.hooks.base_hook import BaseHook
-from airflow.operators.ddf_plugin import (GenerateDatapackageOperator,
-                                          DependencyDatasetSensor,
-                                          UpdateSourceOperator, GitCommitOperator,
-                                          GitCheckoutOperator, GitPushOperator,
-                                          GitMergeOperator, RunETLOperator,
-                                          GitResetAndGoMasterOperator, CleanCFCacheOperator,
-                                          GCSUploadOperator, ValidateDatasetOperator,
-                                          SlackReportOperator, GitPullOperator)
+from ddf_operators import (GenerateDatapackageOperator,
+                           DependencyDatasetSensor,
+                           UpdateSourceOperator, GitCommitOperator,
+                           GitCheckoutOperator, GitPushOperator,
+                           GitMergeOperator, RunETLOperator,
+                           GitResetAndGoMasterOperator, CleanCFCacheOperator,
+                           GCSUploadOperator, ValidateDatasetOperator,
+                           SlackReportOperator, GitPullOperator)
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.operators.python_operator import BranchPythonOperator
 from airflow.executors.local_executor import LocalExecutor
