@@ -362,7 +362,6 @@ class ValidateDatasetDependOnGitOperator(BashOperator):
 class DependencyDatasetSensor(BaseSensorOperator):
     """Sensor that wait for the dependency. If dependency failed, this sensor failed too."""
 
-    @apply_defaults
     def __init__(self, external_dag_id, external_task_id,
                  execution_date=None,
                  allowed_states=[State.SUCCESS],
@@ -423,7 +422,6 @@ class DataPackageUpdatedSensor(BaseSensorOperator):
     """Sensor Operation to detect dataset changes."""
     ui_color = '#33ccff'
 
-    @apply_defaults
     def __init__(self, path, dependencies, *args, **kwargs):
         "docstring"
         if not osp.exists(path):
@@ -451,7 +449,6 @@ class LockDataPackageOperator(BaseSensorOperator):
     """Operator to send a xcom variable, to indicator some datasets are required."""
     ui_color = '#666666'
 
-    @apply_defaults
     def __init__(self, op, dps, *args, **kwargs):
         "docstring"
         self.op = op
@@ -496,7 +493,6 @@ class LockDataPackageOperator(BaseSensorOperator):
 class SlackReportOperator(SimpleHttpOperator):
     """Operator to report a message to slack with default buttons"""
 
-    @apply_defaults
     def __init__(self, status, airflow_baseurl, *args, **kwargs):
         """report status of task in slack.
 
