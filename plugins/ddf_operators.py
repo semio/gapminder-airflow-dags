@@ -157,7 +157,7 @@ class GitCommitOperator(BashOperator):
         else
             HAS_UPDATE=0
             for f in $(git diff --name-only | grep -v datapackage.json); do
-                if [[ $(git diff $f | tail -n +5 | grep -e "^[++|\-\-]" | head -c1 | wc -c) -ne 0 ]]; then
+                if [[ $(git diff $f | tail -n +3 | grep -e "^[++|\-\-]" | head -c1 | wc -c) -ne 0 ]]; then
                     HAS_UPDATE=1
                     git add $f
                 fi
