@@ -46,7 +46,7 @@ if hasattr(dag, 'catchup'):
 tmp_cleanup = """
 echo "Getting Configurations..."
 DIRECTORY="{{params.directory}}"
-MAX_AGE_IN_DAYS="{{dag_run.conf.maxTmpAgeInDays}}"
+MAX_AGE_IN_DAYS="{{dag_run.conf.get('maxTmpAgeInDays', '')}}"
 AIRFLOW_USER='""" + str(AIRFLOW_USER) + """'
 
 if [ "${MAX_AGE_IN_DAYS}" == "" ]; then
