@@ -97,7 +97,7 @@ class GitPullOperator(BashOperator):
         set -eu
         cd {{ params.dataset }}
         git pull
-        git submodule foreach git pull origin master
+        git submodule foreach git pull origin
         '''
         super().__init__(bash_command=bash_command,
                          params={'dataset': dataset},
