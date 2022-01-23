@@ -498,7 +498,7 @@ class NotifyWaffleServerOperator(BashOperator):
     """Fake a slack command to load the dataset in waffle server"""
     def __init__(self, dataset,  *args, **kwargs):
         base_name = dataset.split('/')[-1]
-        conf = Variable.get("ws_command", deserialize_json=True)
+        conf = Variable.get("automatic_ws_datasets_conf", deserialize_json=True)
         if dataset in conf.keys():
             branch = conf[dataset]['branch']
             ws_dataset_id = conf[dataset]['ws_dataset_id']
