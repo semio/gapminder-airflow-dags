@@ -513,7 +513,7 @@ class NotifyWaffleServerOperator(BashOperator):
         '''
 
         super().__init__(bash_command=bash_command,
-                         params={text: 'text'},
+                         params={'text': text},
                          *args, **kwargs)
 
 
