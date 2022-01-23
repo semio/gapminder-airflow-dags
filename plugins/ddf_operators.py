@@ -496,14 +496,20 @@ class LockDataPackageOperator(BaseSensorOperator):
 
 class NotifyWaffleServerOperator(BashOperator):
     """Fake a slack command to load the dataset in waffle server"""
-    def __init__(self, dataset,  branch, *args, **kwargs):
+    def __init__(self, dataset,  *args, **kwargs):
         base_name = dataset.split('/')[-1]
-        folder_name = "-".join(base_name.split('--')[1:]) + "-" + branch
-        text = f"-N {folder_name} --publish https://github.com/open-numbers/{base_name}.git {branch}"
+        conf = Variable.get("ws_command", deserialize_json=True)
+        if dataset in conf.keys():
+            branch = conf[dataset]['branch']
+            ws_dataset_id = conf[dataset]['ws_dataset_id']
+        else:
+            branch = 'master'
+            ws_dataset_id = "-".join(base_name.split('--')[1:]) + "-" + branch
+        text = f"-N {ws_dataset_id} --publish https://github.com/open-numbers/{base_name}.git {branch}"
 
         bash_command = '''\
         set -eu
-        curl -d 'token=foo' -d 'command=/bwload' --data-urlencode 'text={{ params.text }}' http://35.228.158.102/slack/
+        echo "curl -d 'token=foo' -d 'command=/bwload' --data-urlencode 'text={{ params.text }}' http://35.228.158.102/slack/"
         '''
 
         super().__init__(bash_command=bash_command,
