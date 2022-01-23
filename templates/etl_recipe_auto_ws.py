@@ -192,11 +192,10 @@ if len(depends_on) > 0:
  datapackage_task >>
  validate_ddf >>
  git_commit_task >>
- notify_ws_task
 )
 
 # commit
 do_nothing = DummyOperator(task_id='do_nothing', dag=dag)
 git_commit_task >> branch_task
-branch_task >> git_merge_task >> git_push_task >> cleanup_task
+branch_task >> git_merge_task >> git_push_task >>  notify_ws_task >> cleanup_task
 branch_task >> do_nothing >> cleanup_task
