@@ -509,7 +509,7 @@ class NotifyWaffleServerOperator(BashOperator):
 
         bash_command = '''\
         set -eu
-        echo "curl -d 'token=foo' -d 'command=/bwload' --data-urlencode 'text={{ params.text }}' http://35.228.158.102/slack/"
+        curl -d 'token=foo' -d 'command=/bwload' --data-urlencode 'text={{ params.text }}' http://35.228.158.102/slack/
         '''
 
         super().__init__(bash_command=bash_command,
