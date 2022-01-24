@@ -191,8 +191,7 @@ if len(depends_on) > 0:
  recipe_task >>
  datapackage_task >>
  validate_ddf >>
- git_commit_task >>
-)
+ git_commit_task)
 
 # commit
 do_nothing = DummyOperator(task_id='do_nothing', dag=dag)
