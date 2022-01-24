@@ -172,7 +172,7 @@ git_push_task = GitPushOperator(task_id='git_push', dag=dag,
                                 push_all=True,
                                 on_success_callback=git_push_callback)
 
-notify_ws_task = NotifyWaffleServerOperator(task_id='notify_waffle_server', dag=dag, dataset=out_dir)
+notify_ws_task = NotifyWaffleServerOperator(task_id='notify_waffle_server', dag=dag, dataset=target_dataset)
 
 # reseting the branch in case of anything failed
 cleanup_task = GitResetAndGoMasterOperator(task_id='cleanup', dag=dag, dataset=out_dir, trigger_rule="all_done")

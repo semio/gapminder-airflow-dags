@@ -505,7 +505,7 @@ class NotifyWaffleServerOperator(BashOperator):
         else:
             branch = 'master'
             ws_dataset_id = "-".join(base_name.split('--')[1:]) + "-" + branch
-        text = f"-N {ws_dataset_id} --publish https://github.com/open-numbers/{base_name}.git {branch}"
+        text = f"-N {ws_dataset_id} --publish https://github.com/{dataset}.git {branch}"
 
         bash_command = '''\
         set -eu
