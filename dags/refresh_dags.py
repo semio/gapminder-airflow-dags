@@ -30,6 +30,7 @@ datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
 gcs_datasets = [x.strip() for x in Variable.get('with_production').split('\n')]
 auto_datasets = [x.strip() for x in Variable.get('automatic_datasets').split('\n')]
+auto_ws_datasets = [x.strip() for x in Variable.get('automatic_ws_datasets').split('\n')]
 custom_schedule = Variable.get('custom_schedule', deserialize_json=True)
 
 
@@ -102,14 +103,18 @@ def refresh_dags(**context):
 
         if etl_type == 'recipe':
             now = datetime.utcnow() - timedelta(days=1)
-            if dataset in auto_datasets:
+            if dataset in auto_ws_datasets:
+                template = env.get_template('etl_recipe_auto_ws.py')
+            elif dataset in auto_datasets:
                 template = env.get_template('etl_recipe_auto.py')
             else:
                 template = env.get_template('etl_recipe.py')
             p = 100 - len(dependencies)  # The more dependencies, the less priority
         elif etl_type == 'python':
             now = datetime.utcnow() - timedelta(days=7)
-            if dataset in auto_datasets:
+            if dataset in auto_ws_datasets:
+                template = env.get_template('etl_recipe_auto_ws.py')
+            elif dataset in auto_datasets:
                 template = env.get_template('etl_recipe_auto.py')
             else:
                 template = env.get_template('etl_recipe.py')
