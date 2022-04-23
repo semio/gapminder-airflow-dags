@@ -17,7 +17,7 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import (BranchPythonOperator,
                                                PythonOperator)
-from airflow.exceptions import AirflowSkipException
+from airflow.exceptions import AirflowSkipException, DagNotFound
 from airflow.api.client.local_client import Client
 from jinja2 import Environment, FileSystemLoader
 
@@ -293,7 +293,12 @@ def refresh_dags(**context):
 
     def remove_dataset_from_db(dataset):
         dag_name = dataset.replace('/', '_')
-        api_client.delete_dag(dag_id=dag_name)
+        try:
+            api_client.delete_dag(dag_id=dag_name)
+        except DagNotFound:
+            # delete_dag will do below if the dag exists:
+            # return f"Removed {count} record(s)"
+            return "Removed 0 records"
 
     for ds in current.keys():
         logging.info('checking {}'.format(ds))
