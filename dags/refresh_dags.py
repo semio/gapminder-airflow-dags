@@ -31,6 +31,8 @@ airflow_home = Variable.get('airflow_home')
 gcs_datasets = [x.strip() for x in Variable.get('with_production').split('\n')]
 auto_datasets = [x.strip() for x in Variable.get('automatic_datasets').split('\n')]
 auto_ws_datasets = [x.strip() for x in Variable.get('automatic_ws_datasets').split('\n')]
+check_source_datasets = [x.strip() for x in
+                         Variable.get('check_source_datasets').split('\n')]
 custom_schedule = Variable.get('custom_schedule', deserialize_json=True)
 
 
@@ -116,6 +118,8 @@ def refresh_dags(**context):
                 template = env.get_template('etl_recipe_auto_ws.py')
             elif dataset in auto_datasets:
                 template = env.get_template('etl_recipe_auto.py')
+            elif dataset in check_source_datasets:
+                template = env.get_template('check_source_only.py')
             else:
                 template = env.get_template('etl_recipe.py')
             p = 100
