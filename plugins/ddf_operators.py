@@ -219,10 +219,7 @@ class ValidateDatasetOperator(BashOperator):
     def __init__(self, dataset, logpath, *args, **kwargs):
         bash_command = '''\
         cd {{ params.dataset }}
-        DT=`date "+%Y-%m-%dT%H-%M-%S"`
-        VALIDATE_OUTPUT="validation-$DT.json"
-        echo "logfile: $VALIDATE_OUTPUT"
-        RES=`validate-ddf ./ --exclude-tags "WARNING TRANSLATION" --silent --heap 8192 --multithread`
+        validate-ddf-ng --no-warning ./
         if [ $? -eq 0 ]
         then
             sleep 2
@@ -230,23 +227,8 @@ class ValidateDatasetOperator(BashOperator):
             exit 0
         else
             sleep 2
-            echo $RES > $VALIDATE_OUTPUT
-            if [ `cat $VALIDATE_OUTPUT | wc -c` -ge 5 ]
-            then
-                echo "validation not successful, moving the log file..."
-                LOGPATH="{{ params.logpath }}/`basename {{ params.dataset }}`"
-                if [ ! -d $LOGPATH ]; then
-                    mkdir $LOGPATH
-                fi
-                mv $VALIDATE_OUTPUT $LOGPATH
-                LOGURL="http://159.89.2.170:8081/`basename {{ params.dataset }}`/$VALIDATE_OUTPUT"
-                echo "you can access the log at $LOGURL"
-                exit 1
-            else
-                echo "ddf-validation failed but no output."
-                rm $VALIDATE_OUTPUT
-                exit 1
-            fi
+            echo "validation failed."
+            exit 1
         fi
         '''
         super().__init__(bash_command=bash_command,
