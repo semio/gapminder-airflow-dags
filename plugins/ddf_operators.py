@@ -218,6 +218,7 @@ class GitResetAndGoMasterOperator(BashOperator):
 class ValidateDatasetOperator(BashOperator):
     def __init__(self, dataset, logpath, *args, **kwargs):
         bash_command = '''\
+        export NODE_OPTIONS="--max-old-space-size=7000"
         cd {{ params.dataset }}
         validate-ddf-ng --no-warning ./
         if [ $? -eq 0 ]
