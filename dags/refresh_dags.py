@@ -38,7 +38,7 @@ custom_schedule = Variable.get('custom_schedule', deserialize_json=True)
 
 dag = DAG('refresh_dags',
           default_args=default_args,
-          schedule_interval='@once')
+          schedule='@once')
 
 
 def check_etl_type():

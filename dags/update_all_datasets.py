@@ -46,7 +46,7 @@ custom_schedule = Variable.get('custom_schedule', deserialize_json=True)
 
 dag = DAG('update_all_datasets',
           default_args=default_args,
-          schedule_interval='@daily')
+          schedule='@daily')
 
 gitpull_template = '''\
 set -eu
