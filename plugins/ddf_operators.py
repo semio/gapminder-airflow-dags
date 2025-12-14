@@ -16,11 +16,10 @@ from airflow.exceptions import AirflowSkipException, AirflowException
 from airflow.models import Variable, TaskInstance
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.sensors.base_sensor_operator import BaseSensorOperator
 from airflow.operators.http_operator import SimpleHttpOperator
-from airflow.utils.decorators import apply_defaults
 from airflow.utils.state import State
 from airflow.utils.db import provide_session
+from airflow.sdk.bases.sensor import BaseSensorOperator
 
 
 log = logging.getLogger(__name__)
@@ -30,17 +29,15 @@ class GenerateDatapackageOperator(PythonOperator):
     def __init__(self, dataset, *args, **kwargs):
         def _gen_dp(d):
             dp = get_datapackage(d, update=True)
-            dump_json(osp.join(dataset, 'datapackage.json'), dp)
+            dump_json(osp.join(dataset, "datapackage.json"), dp)
 
-        super().__init__(python_callable=_gen_dp,
-                         op_args=[dataset],
-                         *args, **kwargs)
+        super().__init__(python_callable=_gen_dp, op_args=[dataset], *args, **kwargs)
 
 
 class RunETLOperator(BashOperator):
     def __init__(self, dataset, *args, **kwargs):
         # TODO: think about how to handle datasets_dir here
-        bash_command = '''\
+        bash_command = """\
         set -eu
         export DATASETS_DIR={{ params.datasets_dir }}
         cd {{ params.dataset }}
@@ -48,17 +45,19 @@ class RunETLOperator(BashOperator):
 
         cd etl/scripts/
         python3 etl.py
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset,
-                                 'datasets_dir': Variable.get('datasets_dir')},
-                         env={'GSPREAD_PANDAS_CONFIG_DIR': Variable.get('GSPREAD_PANDAS_CONFIG_DIR')},
-                         *args, **kwargs)
+        """
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset, "datasets_dir": Variable.get("datasets_dir")},
+            env={"GSPREAD_PANDAS_CONFIG_DIR": Variable.get("GSPREAD_PANDAS_CONFIG_DIR")},
+            *args,
+            **kwargs,
+        )
 
 
 class UpdateSourceOperator(BashOperator):
     def __init__(self, dataset, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         set -eu
         export DATASETS_DIR={{ params.datasets_dir }}
         cd {{ params.dataset }}
@@ -70,59 +69,63 @@ class UpdateSourceOperator(BashOperator):
         else
             echo "no updater script"
         fi
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset,
-                                 'datasets_dir': Variable.get('datasets_dir')},
-                         env={'GSPREAD_PANDAS_CONFIG_DIR': Variable.get('GSPREAD_PANDAS_CONFIG_DIR')},
-                         *args, **kwargs)
+        """
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset, "datasets_dir": Variable.get("datasets_dir")},
+            env={"GSPREAD_PANDAS_CONFIG_DIR": Variable.get("GSPREAD_PANDAS_CONFIG_DIR")},
+            *args,
+            **kwargs,
+        )
 
 
 class GitCheckoutOperator(BashOperator):
     def __init__(self, dataset, branch, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         set -eu
         cd {{ params.dataset }}
         git checkout {{ params.branch }}
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset,
-                                 'branch': branch},
-                         *args, **kwargs)
+        """
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset, "branch": branch},
+            *args,
+            **kwargs,
+        )
 
 
 class GitPullOperator(BashOperator):
     def __init__(self, dataset, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         set -eu
         cd {{ params.dataset }}
         git pull
         git submodule update --merge
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset},
-                         *args, **kwargs)
+        """
+        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
 
 
 class GitMergeOperator(BashOperator):
     def __init__(self, dataset, head, base, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         set -eu
         cd {{ params.dataset }}
         git checkout {{ params.base }}
         git merge {{ params.head }}
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset,
-                                 'head': head,
-                                 'base': base},
-                         *args, **kwargs)
+        """
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset, "head": head, "base": base},
+            *args,
+            **kwargs,
+        )
 
 
 class GitPushOperator(BashOperator):
     """Check if there are updates, And push when necessary"""
+
     def __init__(self, dataset, push_all=False, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         set -eu
         cd {{ params.dataset }}
         {% if params.push_all is sameas true %}
@@ -135,10 +138,13 @@ class GitPushOperator(BashOperator):
         {% else %}
         git push -u origin
         {% endif %}
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset, 'push_all': push_all},
-                         *args, **kwargs)
+        """
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset, "push_all": push_all},
+            *args,
+            **kwargs,
+        )
 
 
 class GitCommitOperator(BashOperator):
@@ -146,8 +152,9 @@ class GitCommitOperator(BashOperator):
 
     It will also push xcom when there is new commit.
     """
+
     def __init__(self, dataset, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         set -eu
         cd {{ params.dataset }}
         if [[ $(git status -s | grep -e '^[? ][?D]' | head -c1 | wc -c) -ne 0 ]]; then
@@ -170,30 +177,27 @@ class GitCommitOperator(BashOperator):
                 echo "nothing new"
             fi
         fi
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset},
-                         *args, **kwargs)
+        """
+        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
 
 
 class GitResetOperator(BashOperator):
     def __init__(self, dataset, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         set -eu
         cd {{ params.dataset }}
         export COMMIT=`git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"`
         git reset --hard $COMMIT
         git clean -dfx
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset},
-                         *args, **kwargs)
+        """
+        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
 
 
 class GitResetAndGoMasterOperator(BashOperator):
     """reset current head and then checkout master branch"""
+
     def __init__(self, dataset, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         set -eu
         cd {{ params.dataset }}
         export BRANCH=`git rev-parse --abbrev-ref HEAD`
@@ -209,15 +213,13 @@ class GitResetAndGoMasterOperator(BashOperator):
         esac
         git clean -dfx
         git checkout master
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset},
-                         *args, **kwargs)
+        """
+        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
 
 
 class ValidateDatasetOperator(BashOperator):
     def __init__(self, dataset, logpath, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         export NODE_OPTIONS="--max-old-space-size=7000"
         cd {{ params.dataset }}
         validate-ddf-ng --no-warning ./
@@ -231,69 +233,78 @@ class ValidateDatasetOperator(BashOperator):
             echo "validation failed."
             exit 1
         fi
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset,
-                                 'logpath': logpath},
-                         *args, **kwargs)
+        """
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset, "logpath": logpath},
+            *args,
+            **kwargs,
+        )
 
 
 class S3UploadOperator(BashOperator):
     """upload a dataset to the target bucket. We don't use S3 Hook because it doesn't support uploading directory yet."""
+
     def __init__(self, dataset, branch, bucket, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         set -eu
         cd {{ params.dataset }}
         git checkout {{ params.branch }}
         aws s3 sync . {{ params.bucket_path }} --delete
-        '''
+        """
 
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset,
-                                 'branch': branch,
-                                 'bucket_path': bucket},
-                         *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset, "branch": branch, "bucket_path": bucket},
+            *args,
+            **kwargs,
+        )
 
 
 class GCSUploadOperator(BashOperator):
     """upload a dataset to the target bucket."""
+
     def __init__(self, dataset, branch, bucket, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         set -eu
         cd {{ params.dataset }}
         git checkout {{ params.branch }}
         gsutil -h "Cache-Control: no-cache, no-store, must-revalidate" -m rsync -d -r -j csv -x '\.git.*$|etl/.*$' . "{{ params.bucket_path }}"
-        '''
+        """
 
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset,
-                                 'branch': branch,
-                                 'bucket_path': bucket},
-                         *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset, "branch": branch, "bucket_path": bucket},
+            *args,
+            **kwargs,
+        )
 
 
 class CleanCFCacheOperator(BashOperator):
     """clean cloudflare cache for a zone and cache tag."""
+
     def __init__(self, zone_id, cache_tags=None, *args, **kwargs):
         if cache_tags:
-            bash_command = '''\
+            bash_command = """\
             set -eu
             cli4 --delete tags={{ params.cache_tags }} /zones/:{{ params.zone_id }}/purge_cache
-            '''
+            """
         else:
-            bash_command = '''\
+            bash_command = """\
             set -eu
             cli4 --delete purge_everything=true /zones/:{{ params.zone_id }}/purge_cache
-            '''
-        super().__init__(bash_command=bash_command,
-                         params={'cache_tags': cache_tags,
-                                 'zone_id': zone_id},
-                         *args, **kwargs)
+            """
+        super().__init__(
+            bash_command=bash_command,
+            params={"cache_tags": cache_tags, "zone_id": zone_id},
+            *args,
+            **kwargs,
+        )
 
 
 class ValidateDatasetDependOnGitOperator(BashOperator):
     def __init__(self, dataset, logpath, *args, **kwargs):
-        bash_command = '''\
+        bash_command = """\
         cd {{ params.dataset }}
         LASTGITCOMMITDATE=`git log -1 --format=%at`
         YESTERDAY=`date -d "yesterday" "+%s"`
@@ -336,22 +347,28 @@ class ValidateDatasetDependOnGitOperator(BashOperator):
             echo "no updates."
             exit 0
         fi
-        '''
-        super().__init__(bash_command=bash_command,
-                         params={'dataset': dataset,
-                                 'logpath': logpath},
-                         *args, **kwargs)
+        """
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset, "logpath": logpath},
+            *args,
+            **kwargs,
+        )
 
 
 class DependencyDatasetSensor(BaseSensorOperator):
     """Sensor that wait for the dependency. If dependency failed, this sensor failed too."""
 
-    @apply_defaults
-    def __init__(self, external_dag_id, external_task_id,
-                 execution_date=None,
-                 allowed_states=[State.SUCCESS],
-                 not_allowed_states=[State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED],
-                 *args, **kwargs):
+    def __init__(
+        self,
+        external_dag_id,
+        external_task_id,
+        execution_date=None,
+        allowed_states=[State.SUCCESS],
+        not_allowed_states=[State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED],
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.not_allowed_states = not_allowed_states
         self.allowed_states = allowed_states
@@ -363,30 +380,34 @@ class DependencyDatasetSensor(BaseSensorOperator):
     @provide_session
     def poke(self, context, session=None):
         if self.execution_date is None:
-            dt = context['execution_date']
+            dt = context["execution_date"]
         else:
             dt = self.execution_date
             if isinstance(dt, str):
                 dt = to_datetime(dt)
 
         dt_today = datetime(dt.year, dt.month, dt.day, 0, 0, 0)
-        dt_start = dt_today - timedelta(days=30)                          # check tasks between 30 days ago
+        dt_start = dt_today - timedelta(days=30)  # check tasks between 30 days ago
         dt_end = dt_today + timedelta(hours=23, minutes=59, seconds=59)  # and the end of today.
 
         log.info(
-            'Poking for '
-            '{self.external_dag_id}.'
-            '{self.external_task_id} on '
-            '{} ... '.format(dt.date(), **locals()))
+            "Poking for {self.external_dag_id}.{self.external_task_id} on {} ... ".format(
+                dt.date(), **locals()
+            )
+        )
         TI = TaskInstance
 
-        last_tasks = session.query(TI).filter(
-            TI.dag_id == self.external_dag_id,
-            TI.task_id == self.external_task_id,
-            # uncomment below (and modify dt_start/dt_end) if you need to
-            # filter the tasks by time.
-            # TI.execution_date.between(dt_start, dt_end),
-        ).order_by(TI.execution_date.desc())
+        last_tasks = (
+            session.query(TI)
+            .filter(
+                TI.dag_id == self.external_dag_id,
+                TI.task_id == self.external_task_id,
+                # uncomment below (and modify dt_start/dt_end) if you need to
+                # filter the tasks by time.
+                # TI.execution_date.between(dt_start, dt_end),
+            )
+            .order_by(TI.execution_date.desc())
+        )
 
         last_task = last_tasks.first()
 
@@ -397,7 +418,7 @@ class DependencyDatasetSensor(BaseSensorOperator):
 
         if last_task:
             if last_task.state in self.not_allowed_states:
-                raise AirflowException('External task failed.')
+                raise AirflowException("External task failed.")
             elif last_task.state in self.allowed_states:
                 session.commit()
                 return True
@@ -405,46 +426,46 @@ class DependencyDatasetSensor(BaseSensorOperator):
 
 class DataPackageUpdatedSensor(BaseSensorOperator):
     """Sensor Operation to detect dataset changes."""
-    ui_color = '#33ccff'
 
-    @apply_defaults
+    ui_color = "#33ccff"
+
     def __init__(self, path, dependencies, *args, **kwargs):
         "docstring"
         if not osp.exists(path):
-            raise FileNotFoundError('dataset not found: {}'.format(path))
+            raise FileNotFoundError("dataset not found: {}".format(path))
         for p in dependencies:
             if not osp.exists(p):
-                raise FileNotFoundError('dataset not found: {}'.format(p))
+                raise FileNotFoundError("dataset not found: {}".format(p))
         self.path = path
         self.dependencies = dependencies
         super().__init__(*args, **kwargs)
 
     def poke(self, context):
-        dp = json.load(open(osp.join(self.path, 'datapackage.json')))
-        last_update = dp['last_updated']
+        dp = json.load(open(osp.join(self.path, "datapackage.json")))
+        last_update = dp["last_updated"]
         for p in self.dependencies:
-            dp_other = json.load(open(osp.join(p, 'datapackage.json')))
-            last_update_other = dp_other['last_updated']
+            dp_other = json.load(open(osp.join(p, "datapackage.json")))
+            last_update_other = dp_other["last_updated"]
             if to_datetime(last_update_other) > to_datetime(last_update):
                 self.last_update = last_update
                 return True
-        raise AirflowSkipException('no need to update')
+        raise AirflowSkipException("no need to update")
 
 
 class LockDataPackageOperator(BaseSensorOperator):
     """Operator to send a xcom variable, to indicator some datasets are required."""
-    ui_color = '#666666'
 
-    @apply_defaults
+    ui_color = "#666666"
+
     def __init__(self, op, dps, *args, **kwargs):
         "docstring"
         self.op = op
         self.dps = dps
-        self.xcom_key = 'lock_datasets'
+        self.xcom_key = "lock_datasets"
         super().__init__(*args, **kwargs)
 
     def poke(self, context):
-        if self.op == 'unlock':
+        if self.op == "unlock":
             return True
         xk = self.xcom_key
         locks = self.xcom_pull(context, task_ids=None, key=xk)
@@ -461,49 +482,47 @@ class LockDataPackageOperator(BaseSensorOperator):
         locks = self.xcom_pull(context, task_ids=None, key=xk)
         if not isinstance(locks, dict):
             locks = {}
-        if self.op == 'lock':
+        if self.op == "lock":
             log.info("we will lock:")
             log.info(self.dps)
             for d in self.dps:
                 locks[d] = True
             self.xcom_push(context, key=xk, value=locks)
-        elif self.op == 'unlock':
+        elif self.op == "unlock":
             log.info("we will unlock:")
             log.info(self.dps)
             for d in self.dps:
                 locks[d] = False
             self.xcom_push(context, key=xk, value=locks)
         else:
-            raise ValueError('op should be lock or unlock')
+            raise ValueError("op should be lock or unlock")
 
 
 class NotifyWaffleServerOperator(BashOperator):
     """Fake a slack command to load the dataset in waffle server"""
-    def __init__(self, dataset,  *args, **kwargs):
-        base_name = dataset.split('/')[-1]
+
+    def __init__(self, dataset, *args, **kwargs):
+        base_name = dataset.split("/")[-1]
         conf = Variable.get("automatic_ws_datasets_conf", deserialize_json=True)
         if dataset in conf.keys():
-            branch = conf[dataset]['branch']
-            ws_dataset_id = conf[dataset]['ws_dataset_id']
+            branch = conf[dataset]["branch"]
+            ws_dataset_id = conf[dataset]["ws_dataset_id"]
         else:
-            branch = 'master'
-            ws_dataset_id = "-".join(base_name.split('--')[1:]) + "-" + branch
+            branch = "master"
+            ws_dataset_id = "-".join(base_name.split("--")[1:]) + "-" + branch
         text = f"-N {ws_dataset_id} --publish https://github.com/{dataset}.git {branch}"
 
-        bash_command = '''\
+        bash_command = """\
         set -eu
         curl -d 'token=foo' -d 'command=/bwload' --data-urlencode 'text={{ params.text }}' http://35.228.158.102/slack/
-        '''
+        """
 
-        super().__init__(bash_command=bash_command,
-                         params={'text': text},
-                         *args, **kwargs)
+        super().__init__(bash_command=bash_command, params={"text": text}, *args, **kwargs)
 
 
 class SlackReportOperator(SimpleHttpOperator):
     """Operator to report a message to slack with default buttons"""
 
-    @apply_defaults
     def __init__(self, status, airflow_baseurl, *args, **kwargs):
         """report status of task in slack.
 
@@ -515,49 +534,35 @@ class SlackReportOperator(SimpleHttpOperator):
 
     def execute(self, context):
         # overwrite self.data to custom message
-        dag_id = context['dag_run'].dag_id
-        task_id = context['ti'].task_id
-        ts = context['ts']
-        dataset = context.get('target_dataset', None)
+        dag_id = context["dag_run"].dag_id
+        task_id = context["ti"].task_id
+        ts = context["ts"]
+        dataset = context.get("target_dataset", None)
 
         text = f"{dag_id}.{task_id}: {self.status}"
-        log_url = osp.join(self.airflow_baseurl, 'log?')
-        log_url = log_url + urlencode({'task_id': task_id, 'dag_id': dag_id, 'execution_date': ts, 'format': 'json'})
+        log_url = osp.join(self.airflow_baseurl, "log?")
+        log_url = log_url + urlencode(
+            {"task_id": task_id, "dag_id": dag_id, "execution_date": ts, "format": "json"}
+        )
 
         blocks = [
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": text
-                }
-            },
+            {"type": "section", "text": {"type": "mrkdwn", "text": text}},
             {
                 "type": "actions",
                 "elements": [
                     {
                         "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "Show log"
-                        },
-                        "url": log_url
+                        "text": {"type": "plain_text", "text": "Show log"},
+                        "url": log_url,
                     }
-                ]
-            }
+                ],
+            },
         ]
 
         if dataset:
             git_url = urljoin("https://github.com", dataset)
-            blocks[1]['elements'].append(
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "Github"
-                    },
-                    "url": git_url
-                }
+            blocks[1]["elements"].append(
+                {"type": "button", "text": {"type": "plain_text", "text": "Github"}, "url": git_url}
             )
 
         data = {"blocks": blocks}
