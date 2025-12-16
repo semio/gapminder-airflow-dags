@@ -2,15 +2,9 @@
 
 import json
 import logging
-import os
 import os.path as osp
-from dataclasses import dataclass
 from urllib.parse import urlencode, urljoin
 
-import requests
-
-import airflow_client.client
-from airflow_client.client.api import task_instance_api
 
 from airflow.providers.http.operators.http import HttpOperator
 from airflow.providers.standard.operators.bash import BashOperator
@@ -21,31 +15,6 @@ from airflow.sdk import Context
 
 from ddf_utils.io import dump_json
 from ddf_utils.package import get_datapackage
-
-
-@dataclass
-class AirflowAccessTokenResponse:
-    access_token: str
-    token_type: str = "Bearer"
-
-
-def get_airflow_client_access_token(
-    host: str,
-    username: str,
-    password: str,
-) -> str:
-    """Retrieve an access token from Airflow API."""
-    url = f"{host}/auth/token"
-    payload = {
-        "username": username,
-        "password": password,
-    }
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code != 201:
-        raise RuntimeError(f"Failed to get access token: {response.status_code} {response.text}")
-    response_success = AirflowAccessTokenResponse(**response.json())
-    return response_success.access_token
 
 
 log = logging.getLogger(__name__)
@@ -322,110 +291,62 @@ class ValidateDatasetDependOnGitOperator(BashOperator):
         )
 
 
-def _get_last_task_instance_date(
-    dag_id: str,
-    task_id: str,
-):
-    """Get the logical date of the last task instance using Airflow REST API.
-
-    Args:
-        dag_id: The DAG ID to query
-        task_id: The task ID to query
-
-    Returns:
-        A function that can be used as execution_date_fn for ExternalTaskSensor
-
-    Environment variables:
-        AIRFLOW_BASEURL: The base URL of Airflow (e.g., http://localhost:8080)
-        AIRFLOW_API_USER: The API username for authentication
-        AIRFLOW_API_PASSWORD: The API password for authentication
-    """
-
-    def _get_execution_date(logical_date, **context):
-        host = os.environ.get("AIRFLOW_BASEURL", "http://localhost:8080")
-        api_url = f"{host}/api/v2"
-        username = os.environ["AIRFLOW_API_USER"]
-        password = os.environ["AIRFLOW_API_PASSWORD"]
-
-        configuration = airflow_client.client.Configuration(host=api_url)
-        configuration.access_token = get_airflow_client_access_token(
-            host=host,
-            username=username,
-            password=password,
-        )
-
-        with airflow_client.client.ApiClient(configuration) as api_client:
-            api_instance = task_instance_api.TaskInstanceApi(api_client)
-
-            try:
-                # Get task instances for the DAG, ordered by logical_date descending
-                # No state filter - we want the most recent run regardless of state
-                response = api_instance.get_task_instances(
-                    dag_id=dag_id,
-                    dag_run_id="~",  # Match all dag runs
-                    limit=1,
-                    order_by="-logical_date",
-                )
-
-                # Filter by task_id and find the most recent one
-                for ti in response.task_instances:
-                    if ti.task_id == task_id:
-                        return [ti.logical_date]
-
-                log.warning(f"No task instance found for {dag_id}.{task_id}")
-                return []
-
-            except airflow_client.client.ApiException as e:
-                log.error(f"Error querying Airflow API: {e}")
-                raise
-
-    return _get_execution_date
-
-
 class DependencyDatasetSensor(ExternalTaskSensor):
     """Sensor that waits for the most recent run of an external task to succeed.
 
-    This sensor extends ExternalTaskSensor and uses the Airflow REST API to find
-    the most recent task instance (regardless of its current state), then waits
-    for that task to reach a successful state.
+    This sensor extends ExternalTaskSensor and uses XCom to find the most recent
+    task run. The dependency task must push an XCom with key 'last_task_run_time'
+    containing its logical_date at the start of each run.
 
     Args:
         external_dag_id: The DAG ID of the external task to wait for
         external_task_id: The task ID of the external task to wait for
+        xcom_key: The XCom key to read (default: 'last_task_run_time')
         allowed_states: States considered as successful (default: ['success'])
         failed_states: States considered as failed (default: ['failed'])
         **kwargs: Additional arguments passed to ExternalTaskSensor
-
-    Environment variables:
-        AIRFLOW_BASEURL: The base URL of Airflow (e.g., http://localhost:8080)
-        AIRFLOW_API_USER: The API username for authentication
-        AIRFLOW_API_PASSWORD: The API password for authentication
     """
 
     def __init__(
         self,
         external_dag_id: str,
         external_task_id: str,
+        xcom_key: str = "last_task_run_time",
         allowed_states: list[str] | None = None,
         failed_states: list[str] | None = None,
         *args,
         **kwargs,
     ):
-        # Create the execution_date_fn that queries the API for the last task run
-        execution_date_fn = _get_last_task_instance_date(
-            dag_id=external_dag_id,
-            task_id=external_task_id,
-        )
+        self._external_dag_id = external_dag_id
+        self._external_task_id = external_task_id
+        self._xcom_key = xcom_key
 
         super().__init__(
             external_dag_id=external_dag_id,
             external_task_id=external_task_id,
-            execution_date_fn=execution_date_fn,
+            execution_date_fn=self._get_execution_date_from_xcom,
             allowed_states=allowed_states or ["success"],
             failed_states=failed_states or ["failed"],
             *args,
             **kwargs,
         )
+
+    def _get_execution_date_from_xcom(self, logical_date, **context):
+        """Get the execution date from XCom pushed by the dependency task."""
+        ti = context["ti"]
+        last_run_time = ti.xcom_pull(
+            dag_id=self._external_dag_id,
+            task_ids=self._external_task_id,
+            key=self._xcom_key,
+        )
+
+        if last_run_time:
+            return [last_run_time]
+
+        log.warning(
+            f"No XCom '{self._xcom_key}' found for {self._external_dag_id}.{self._external_task_id}"
+        )
+        return []
 
 
 class NotifyWaffleServerOperator(BashOperator):
