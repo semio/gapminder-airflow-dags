@@ -2,24 +2,50 @@
 
 import json
 import logging
+import os
 import os.path as osp
-
-from datetime import datetime, timedelta
-from pandas import to_datetime
-
+from dataclasses import dataclass
 from urllib.parse import urlencode, urljoin
+
+import requests
+
+import airflow_client.client
+from airflow_client.client.api import task_instance_api
+
+from airflow.providers.http.operators.http import HttpOperator
+from airflow.providers.standard.operators.bash import BashOperator
+from airflow.providers.standard.operators.python import PythonOperator
+from airflow.providers.standard.sensors.external_task import ExternalTaskSensor
+from airflow.sdk import Variable
+from airflow.sdk import Context
 
 from ddf_utils.io import dump_json
 from ddf_utils.package import get_datapackage
 
-from airflow.exceptions import AirflowSkipException, AirflowException
-from airflow.models import Variable, TaskInstance
-from airflow.operators.bash_operator import BashOperator
-from airflow.operators.python_operator import PythonOperator
-from airflow.operators.http_operator import SimpleHttpOperator
-from airflow.utils.state import State
-from airflow.utils.db import provide_session
-from airflow.sdk.bases.sensor import BaseSensorOperator
+
+@dataclass
+class AirflowAccessTokenResponse:
+    access_token: str
+    token_type: str = "Bearer"
+
+
+def get_airflow_client_access_token(
+    host: str,
+    username: str,
+    password: str,
+) -> str:
+    """Retrieve an access token from Airflow API."""
+    url = f"{host}/auth/token"
+    payload = {
+        "username": username,
+        "password": password,
+    }
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code != 201:
+        raise RuntimeError(f"Failed to get access token: {response.status_code} {response.text}")
+    response_success = AirflowAccessTokenResponse(**response.json())
+    return response_success.access_token
 
 
 log = logging.getLogger(__name__)
@@ -242,66 +268,6 @@ class ValidateDatasetOperator(BashOperator):
         )
 
 
-class S3UploadOperator(BashOperator):
-    """upload a dataset to the target bucket. We don't use S3 Hook because it doesn't support uploading directory yet."""
-
-    def __init__(self, dataset, branch, bucket, *args, **kwargs):
-        bash_command = """\
-        set -eu
-        cd {{ params.dataset }}
-        git checkout {{ params.branch }}
-        aws s3 sync . {{ params.bucket_path }} --delete
-        """
-
-        super().__init__(
-            bash_command=bash_command,
-            params={"dataset": dataset, "branch": branch, "bucket_path": bucket},
-            *args,
-            **kwargs,
-        )
-
-
-class GCSUploadOperator(BashOperator):
-    """upload a dataset to the target bucket."""
-
-    def __init__(self, dataset, branch, bucket, *args, **kwargs):
-        bash_command = """\
-        set -eu
-        cd {{ params.dataset }}
-        git checkout {{ params.branch }}
-        gsutil -h "Cache-Control: no-cache, no-store, must-revalidate" -m rsync -d -r -j csv -x '\.git.*$|etl/.*$' . "{{ params.bucket_path }}"
-        """
-
-        super().__init__(
-            bash_command=bash_command,
-            params={"dataset": dataset, "branch": branch, "bucket_path": bucket},
-            *args,
-            **kwargs,
-        )
-
-
-class CleanCFCacheOperator(BashOperator):
-    """clean cloudflare cache for a zone and cache tag."""
-
-    def __init__(self, zone_id, cache_tags=None, *args, **kwargs):
-        if cache_tags:
-            bash_command = """\
-            set -eu
-            cli4 --delete tags={{ params.cache_tags }} /zones/:{{ params.zone_id }}/purge_cache
-            """
-        else:
-            bash_command = """\
-            set -eu
-            cli4 --delete purge_everything=true /zones/:{{ params.zone_id }}/purge_cache
-            """
-        super().__init__(
-            bash_command=bash_command,
-            params={"cache_tags": cache_tags, "zone_id": zone_id},
-            *args,
-            **kwargs,
-        )
-
-
 class ValidateDatasetDependOnGitOperator(BashOperator):
     def __init__(self, dataset, logpath, *args, **kwargs):
         bash_command = """\
@@ -356,146 +322,110 @@ class ValidateDatasetDependOnGitOperator(BashOperator):
         )
 
 
-class DependencyDatasetSensor(BaseSensorOperator):
-    """Sensor that wait for the dependency. If dependency failed, this sensor failed too."""
+def _get_last_task_instance_date(
+    dag_id: str,
+    task_id: str,
+):
+    """Get the logical date of the last task instance using Airflow REST API.
+
+    Args:
+        dag_id: The DAG ID to query
+        task_id: The task ID to query
+
+    Returns:
+        A function that can be used as execution_date_fn for ExternalTaskSensor
+
+    Environment variables:
+        AIRFLOW_BASEURL: The base URL of Airflow (e.g., http://localhost:8080)
+        AIRFLOW_API_USER: The API username for authentication
+        AIRFLOW_API_PASSWORD: The API password for authentication
+    """
+
+    def _get_execution_date(logical_date, **context):
+        host = os.environ.get("AIRFLOW_BASEURL", "http://localhost:8080")
+        api_url = f"{host}/api/v2"
+        username = os.environ["AIRFLOW_API_USER"]
+        password = os.environ["AIRFLOW_API_PASSWORD"]
+
+        configuration = airflow_client.client.Configuration(host=api_url)
+        configuration.access_token = get_airflow_client_access_token(
+            host=host,
+            username=username,
+            password=password,
+        )
+
+        with airflow_client.client.ApiClient(configuration) as api_client:
+            api_instance = task_instance_api.TaskInstanceApi(api_client)
+
+            try:
+                # Get task instances for the DAG, ordered by logical_date descending
+                # No state filter - we want the most recent run regardless of state
+                response = api_instance.get_task_instances(
+                    dag_id=dag_id,
+                    dag_run_id="~",  # Match all dag runs
+                    limit=1,
+                    order_by="-logical_date",
+                )
+
+                # Filter by task_id and find the most recent one
+                for ti in response.task_instances:
+                    if ti.task_id == task_id:
+                        return [ti.logical_date]
+
+                log.warning(f"No task instance found for {dag_id}.{task_id}")
+                return []
+
+            except airflow_client.client.ApiException as e:
+                log.error(f"Error querying Airflow API: {e}")
+                raise
+
+    return _get_execution_date
+
+
+class DependencyDatasetSensor(ExternalTaskSensor):
+    """Sensor that waits for the most recent run of an external task to succeed.
+
+    This sensor extends ExternalTaskSensor and uses the Airflow REST API to find
+    the most recent task instance (regardless of its current state), then waits
+    for that task to reach a successful state.
+
+    Args:
+        external_dag_id: The DAG ID of the external task to wait for
+        external_task_id: The task ID of the external task to wait for
+        allowed_states: States considered as successful (default: ['success'])
+        failed_states: States considered as failed (default: ['failed'])
+        **kwargs: Additional arguments passed to ExternalTaskSensor
+
+    Environment variables:
+        AIRFLOW_BASEURL: The base URL of Airflow (e.g., http://localhost:8080)
+        AIRFLOW_API_USER: The API username for authentication
+        AIRFLOW_API_PASSWORD: The API password for authentication
+    """
 
     def __init__(
         self,
-        external_dag_id,
-        external_task_id,
-        execution_date=None,
-        allowed_states=[State.SUCCESS],
-        not_allowed_states=[State.FAILED, State.UP_FOR_RETRY, State.UPSTREAM_FAILED],
+        external_dag_id: str,
+        external_task_id: str,
+        allowed_states: list[str] | None = None,
+        failed_states: list[str] | None = None,
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
-        self.not_allowed_states = not_allowed_states
-        self.allowed_states = allowed_states
-        self.execution_date = execution_date
-
-        self.external_dag_id = external_dag_id
-        self.external_task_id = external_task_id
-
-    @provide_session
-    def poke(self, context, session=None):
-        if self.execution_date is None:
-            dt = context["execution_date"]
-        else:
-            dt = self.execution_date
-            if isinstance(dt, str):
-                dt = to_datetime(dt)
-
-        dt_today = datetime(dt.year, dt.month, dt.day, 0, 0, 0)
-        dt_start = dt_today - timedelta(days=30)  # check tasks between 30 days ago
-        dt_end = dt_today + timedelta(hours=23, minutes=59, seconds=59)  # and the end of today.
-
-        log.info(
-            "Poking for {self.external_dag_id}.{self.external_task_id} on {} ... ".format(
-                dt.date(), **locals()
-            )
-        )
-        TI = TaskInstance
-
-        last_tasks = (
-            session.query(TI)
-            .filter(
-                TI.dag_id == self.external_dag_id,
-                TI.task_id == self.external_task_id,
-                # uncomment below (and modify dt_start/dt_end) if you need to
-                # filter the tasks by time.
-                # TI.execution_date.between(dt_start, dt_end),
-            )
-            .order_by(TI.execution_date.desc())
+        # Create the execution_date_fn that queries the API for the last task run
+        execution_date_fn = _get_last_task_instance_date(
+            dag_id=external_dag_id,
+            task_id=external_task_id,
         )
 
-        last_task = last_tasks.first()
-
-        # log.info('task count between {} and {}: {}'.format(dt_start,
-        #                                                    dt_end,
-        #                                                    last_tasks.count()))
-        log.info("last task instance was executed on {}".format(last_task.execution_date))
-
-        if last_task:
-            if last_task.state in self.not_allowed_states:
-                raise AirflowException("External task failed.")
-            elif last_task.state in self.allowed_states:
-                session.commit()
-                return True
-
-
-class DataPackageUpdatedSensor(BaseSensorOperator):
-    """Sensor Operation to detect dataset changes."""
-
-    ui_color = "#33ccff"
-
-    def __init__(self, path, dependencies, *args, **kwargs):
-        "docstring"
-        if not osp.exists(path):
-            raise FileNotFoundError("dataset not found: {}".format(path))
-        for p in dependencies:
-            if not osp.exists(p):
-                raise FileNotFoundError("dataset not found: {}".format(p))
-        self.path = path
-        self.dependencies = dependencies
-        super().__init__(*args, **kwargs)
-
-    def poke(self, context):
-        dp = json.load(open(osp.join(self.path, "datapackage.json")))
-        last_update = dp["last_updated"]
-        for p in self.dependencies:
-            dp_other = json.load(open(osp.join(p, "datapackage.json")))
-            last_update_other = dp_other["last_updated"]
-            if to_datetime(last_update_other) > to_datetime(last_update):
-                self.last_update = last_update
-                return True
-        raise AirflowSkipException("no need to update")
-
-
-class LockDataPackageOperator(BaseSensorOperator):
-    """Operator to send a xcom variable, to indicator some datasets are required."""
-
-    ui_color = "#666666"
-
-    def __init__(self, op, dps, *args, **kwargs):
-        "docstring"
-        self.op = op
-        self.dps = dps
-        self.xcom_key = "lock_datasets"
-        super().__init__(*args, **kwargs)
-
-    def poke(self, context):
-        if self.op == "unlock":
-            return True
-        xk = self.xcom_key
-        locks = self.xcom_pull(context, task_ids=None, key=xk)
-        if not isinstance(locks, dict):
-            return True
-        for d in self.dps:
-            if d in locks.keys() and locks[d] is True:
-                return False
-        return True
-
-    def execute(self, context):
-        super().execute(context)
-        xk = self.xcom_key
-        locks = self.xcom_pull(context, task_ids=None, key=xk)
-        if not isinstance(locks, dict):
-            locks = {}
-        if self.op == "lock":
-            log.info("we will lock:")
-            log.info(self.dps)
-            for d in self.dps:
-                locks[d] = True
-            self.xcom_push(context, key=xk, value=locks)
-        elif self.op == "unlock":
-            log.info("we will unlock:")
-            log.info(self.dps)
-            for d in self.dps:
-                locks[d] = False
-            self.xcom_push(context, key=xk, value=locks)
-        else:
-            raise ValueError("op should be lock or unlock")
+        super().__init__(
+            external_dag_id=external_dag_id,
+            external_task_id=external_task_id,
+            execution_date_fn=execution_date_fn,
+            allowed_states=allowed_states or ["success"],
+            failed_states=failed_states or ["failed"],
+            *args,
+            **kwargs,
+        )
 
 
 class NotifyWaffleServerOperator(BashOperator):
@@ -520,7 +450,7 @@ class NotifyWaffleServerOperator(BashOperator):
         super().__init__(bash_command=bash_command, params={"text": text}, *args, **kwargs)
 
 
-class SlackReportOperator(SimpleHttpOperator):
+class SlackReportOperator(HttpOperator):
     """Operator to report a message to slack with default buttons"""
 
     def __init__(self, status, airflow_baseurl, *args, **kwargs):
@@ -528,21 +458,26 @@ class SlackReportOperator(SimpleHttpOperator):
 
         status: task status, possible values are same as task status in airflow
         """
-        super(SlackReportOperator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.status = status
         self.airflow_baseurl = airflow_baseurl
 
-    def execute(self, context):
+    def execute(self, context: Context):
         # overwrite self.data to custom message
-        dag_id = context["dag_run"].dag_id
-        task_id = context["ti"].task_id
-        ts = context["ts"]
+        dag_id = context["dag_run"].dag_id  # type: ignore
+        task_id = context["ti"].task_id  # type: ignore
+        ts = context["ts"]  # type: ignore
         dataset = context.get("target_dataset", None)
 
         text = f"{dag_id}.{task_id}: {self.status}"
         log_url = osp.join(self.airflow_baseurl, "log?")
         log_url = log_url + urlencode(
-            {"task_id": task_id, "dag_id": dag_id, "execution_date": ts, "format": "json"}
+            {
+                "task_id": task_id,
+                "dag_id": dag_id,
+                "execution_date": ts,
+                "format": "json",
+            }
         )
 
         blocks = [
@@ -562,7 +497,11 @@ class SlackReportOperator(SimpleHttpOperator):
         if dataset:
             git_url = urljoin("https://github.com", dataset)
             blocks[1]["elements"].append(
-                {"type": "button", "text": {"type": "plain_text", "text": "Github"}, "url": git_url}
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "Github"},
+                    "url": git_url,
+                }
             )
 
         data = {"blocks": blocks}
