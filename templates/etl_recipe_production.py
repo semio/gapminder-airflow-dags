@@ -35,15 +35,13 @@ out_dir = osp.join(datasets_dir, target_dataset)
 
 
 def slack_report(context):
-    task = SlackReportOperator(
-        task_id='slack_report',
-        http_conn_id='slack_connection',
+    reporter = SlackReportOperator(
         endpoint=endpoint,
         status='failed',
         airflow_baseurl=airflow_baseurl,
     )
     context['target_dataset'] = '{{ name }}'
-    task.execute(context)
+    reporter.execute(context)
 
 
 default_args = {

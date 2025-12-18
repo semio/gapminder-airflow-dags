@@ -53,15 +53,13 @@ dag_id = target_dataset.replace("/", "_")
 
 
 def slack_report(context, status):
-    task = SlackReportOperator(
-        task_id="slack_report",
-        http_conn_id="slack_connection",
+    reporter = SlackReportOperator(
         endpoint=endpoint,
         status=status,
         airflow_baseurl=airflow_baseurl,
     )
     context["target_dataset"] = "target_dataset"
-    task.execute(context)
+    reporter.execute(context)
 
 
 default_args = {

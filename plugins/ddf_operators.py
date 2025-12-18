@@ -5,13 +5,11 @@ import logging
 import os.path as osp
 from urllib.parse import urlencode, urljoin
 
-
-from airflow.providers.http.operators.http import HttpOperator
+import requests
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.standard.sensors.external_task import ExternalTaskSensor
 from airflow.sdk import Variable
-from airflow.sdk import Context
 
 from ddf_utils.io import dump_json
 from ddf_utils.package import get_datapackage
@@ -422,23 +420,32 @@ class NotifyWaffleServerOperator(BashOperator):
         )
 
 
-class SlackReportOperator(HttpOperator):
-    """Operator to report a message to slack with default buttons"""
+class SlackReportOperator:
+    """Send a message to Slack with default buttons.
 
-    def __init__(self, status, airflow_baseurl, *args, **kwargs):
-        """report status of task in slack.
+    This is not an Airflow operator - it's designed to be called directly
+    from callbacks (on_failure_callback, on_success_callback) where operator
+    execution context is not available.
+    """
 
-        status: task status, possible values are same as task status in airflow
+    def __init__(self, endpoint, status, airflow_baseurl, **kwargs):
+        """Initialize the Slack reporter.
+
+        Args:
+            endpoint: Slack webhook URL
+            status: Task status message (e.g., 'failed', 'new data')
+            airflow_baseurl: Base URL of the Airflow webserver for log links
+            **kwargs: Ignored (for compatibility with old interface)
         """
-        super().__init__(*args, **kwargs)
+        self.endpoint = endpoint
         self.status = status
         self.airflow_baseurl = airflow_baseurl
 
-    def execute(self, context: Context):
-        # overwrite self.data to custom message
-        dag_id = context["dag_run"].dag_id  # type: ignore
-        task_id = context["ti"].task_id  # type: ignore
-        ts = context["ts"]  # type: ignore
+    def execute(self, context):
+        """Send the Slack message."""
+        dag_id = context["dag_run"].dag_id
+        task_id = context["ti"].task_id
+        ts = context["ts"]
         dataset = context.get("target_dataset", None)
 
         text = f"{dag_id}.{task_id}: {self.status}"
@@ -477,8 +484,13 @@ class SlackReportOperator(HttpOperator):
             )
 
         data = {"blocks": blocks}
-        data = json.dumps(data)
 
-        self.data = data
-        self.log.info(data)
-        super().execute(context)
+        log.info("Sending Slack message: %s", json.dumps(data))
+        response = requests.post(
+            self.endpoint,
+            json=data,
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        log.info("Slack message sent successfully")
