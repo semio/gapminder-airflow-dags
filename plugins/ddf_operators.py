@@ -20,6 +20,38 @@ from ddf_utils.package import get_datapackage
 log = logging.getLogger(__name__)
 
 
+class SetupVenvOperator(BashOperator):
+    """Create and setup a Python virtual environment for ETL scripts.
+
+    Uses uv to create a venv in the etl/ folder and installs dependencies.
+    If etl/requirements.txt exists, installs from it; otherwise installs ddf_utils.
+    """
+
+    def __init__(self, dataset, *args, **kwargs):
+        bash_command = """\
+        set -eu
+        cd {{ params.dataset }}/etl
+
+        # Create venv using uv
+        uv venv .venv
+
+        # Install dependencies
+        if [ -f requirements.txt ]; then
+            echo "Installing from requirements.txt"
+            uv pip install -r requirements.txt
+        else
+            echo "No requirements.txt found, installing ddf_utils"
+            uv pip install ddf_utils
+        fi
+        """
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset},
+            *args,
+            **kwargs,
+        )
+
+
 class GenerateDatapackageOperator(PythonOperator):
     def __init__(self, dataset, *args, **kwargs):
         def _gen_dp(d):
@@ -31,20 +63,23 @@ class GenerateDatapackageOperator(PythonOperator):
 
 class RunETLOperator(BashOperator):
     def __init__(self, dataset, *args, **kwargs):
-        # TODO: think about how to handle datasets_dir here
         bash_command = """\
         set -eu
         export DATASETS_DIR={{ params.datasets_dir }}
         cd {{ params.dataset }}
         ddf cleanup --exclude icon.png ddf .
 
+        # Activate venv and run ETL
+        source etl/.venv/bin/activate
         cd etl/scripts/
-        python3 etl.py
+        python etl.py
         """
         super().__init__(
             bash_command=bash_command,
             params={"dataset": dataset, "datasets_dir": Variable.get("datasets_dir")},
-            env={"GSPREAD_PANDAS_CONFIG_DIR": Variable.get("GSPREAD_PANDAS_CONFIG_DIR")},
+            env={
+                "GSPREAD_PANDAS_CONFIG_DIR": Variable.get("GSPREAD_PANDAS_CONFIG_DIR")
+            },
             *args,
             **kwargs,
         )
@@ -57,9 +92,11 @@ class UpdateSourceOperator(BashOperator):
         export DATASETS_DIR={{ params.datasets_dir }}
         cd {{ params.dataset }}
 
+        # Activate venv and run update_source if it exists
+        source etl/.venv/bin/activate
         cd etl/scripts/
         if [ -f update_source.py ]; then
-            python3 update_source.py
+            python update_source.py
             echo "updated source."
         else
             echo "no updater script"
@@ -68,7 +105,9 @@ class UpdateSourceOperator(BashOperator):
         super().__init__(
             bash_command=bash_command,
             params={"dataset": dataset, "datasets_dir": Variable.get("datasets_dir")},
-            env={"GSPREAD_PANDAS_CONFIG_DIR": Variable.get("GSPREAD_PANDAS_CONFIG_DIR")},
+            env={
+                "GSPREAD_PANDAS_CONFIG_DIR": Variable.get("GSPREAD_PANDAS_CONFIG_DIR")
+            },
             *args,
             **kwargs,
         )
@@ -97,7 +136,9 @@ class GitPullOperator(BashOperator):
         git pull
         git submodule update --merge
         """
-        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs
+        )
 
 
 class GitMergeOperator(BashOperator):
@@ -146,19 +187,21 @@ class GitCommitOperator(BashOperator):
     """Check if there are updates, And make a commit when necessary.
 
     It will also push xcom when there is new commit.
+    Excludes etl/.venv from being committed.
     """
 
     def __init__(self, dataset, *args, **kwargs):
         bash_command = """\
         set -eu
         cd {{ params.dataset }}
-        if [[ $(git status -s | grep -e '^[? ][?D]' | head -c1 | wc -c) -ne 0 ]]; then
-            git add .
+        # Exclude .venv from git status check
+        if [[ $(git status -s -- ':!etl/.venv' | grep -e '^[? ][?D]' | head -c1 | wc -c) -ne 0 ]]; then
+            git add . ':!etl/.venv'
             git commit -m "auto generated dataset"
             echo "git updated"
         else
             HAS_UPDATE=0
-            for f in $(git diff --name-only | grep -v datapackage.json); do
+            for f in $(git diff --name-only -- ':!etl/.venv' ':!datapackage.json'); do
                 if [[ $(git diff $f | tail -n +3 | grep -e "^[++|\-\-]" | head -c1 | wc -c) -ne 0 ]]; then
                     HAS_UPDATE=1
                     git add $f
@@ -173,7 +216,9 @@ class GitCommitOperator(BashOperator):
             fi
         fi
         """
-        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs
+        )
 
 
 class GitResetOperator(BashOperator):
@@ -185,7 +230,9 @@ class GitResetOperator(BashOperator):
         git reset --hard $COMMIT
         git clean -dfx
         """
-        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs
+        )
 
 
 class GitResetAndGoMasterOperator(BashOperator):
@@ -209,7 +256,9 @@ class GitResetAndGoMasterOperator(BashOperator):
         git clean -dfx
         git checkout master
         """
-        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs
+        )
 
 
 class ValidateDatasetOperator(BashOperator):
@@ -368,7 +417,9 @@ class NotifyWaffleServerOperator(BashOperator):
         curl -d 'token=foo' -d 'command=/bwload' --data-urlencode 'text={{ params.text }}' http://35.228.158.102/slack/
         """
 
-        super().__init__(bash_command=bash_command, params={"text": text}, *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command, params={"text": text}, *args, **kwargs
+        )
 
 
 class SlackReportOperator(HttpOperator):
