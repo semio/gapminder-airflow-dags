@@ -13,4 +13,4 @@ AIRFLOW_VERSION=3.1.3
 # uv pip install "apache-airflow==${AIRFLOW_VERSION}" --constraint "${CONSTRAINT_URL}"
 
 # But when developing the plugins, we don't need to have to get "golden version" for all packages. So let uv decide the constraints.
-uv pip install ddf_utils==1.0.18 "apache-airflow==${AIRFLOW_VERSION}" apache-airflow-providers-http apache-airflow-client
+uv pip install ddf_utils==1.0.18 "apache-airflow==${AIRFLOW_VERSION}" apache-airflow-providers-http apache-airflow-client "apache-airflow-providers-slack[common.compat,common.sql]" slack-sdk asgiref

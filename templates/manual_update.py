@@ -5,13 +5,12 @@
 import os.path as osp
 from datetime import datetime, timedelta
 
-from airflow.hooks.base import BaseHook
+from airflow.providers.slack.notifications.slack_webhook import send_slack_webhook_notification
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.sdk import DAG, Variable
 
 from ddf_operators import (
     GitPullOperator,
-    SlackReportOperator,
     ValidateDatasetOperator,
 )
 
@@ -23,24 +22,18 @@ target_dataset = '{{ name }}'
 
 datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
-# gcs_datasets = [x.strip() for x in Variable.get('gcs_datasets').split('\n')]
-endpoint = BaseHook.get_connection('slack_connection').password
-airflow_baseurl = BaseHook.get_connection('airflow_web').host
 
 logpath = osp.join(airflow_home, 'validation-log')
 out_dir = osp.join(datasets_dir, target_dataset)
 dag_id = target_dataset.replace('/', '_')
 
-
-def slack_report(context):
-    reporter = SlackReportOperator(
-        endpoint=endpoint,
-        status='failed',
-        airflow_baseurl=airflow_baseurl,
-    )
-    context['target_dataset'] = '{{ name }}'
-    reporter.execute(context)
-
+# Slack notifications
+{% raw %}
+failure_notification = send_slack_webhook_notification(
+    slack_webhook_conn_id='slack_webhook',
+    text=f'{dag_id}.{{{{ ti.task_id }}}}: failed\nGithub: https://github.com/{target_dataset}',
+)
+{% endraw %}
 
 default_args = {
     'owner': 'airflow',
@@ -54,7 +47,7 @@ default_args = {
     # 'end_date': datetime(2016, 1, 1),
     'poke_interval': 300,
     'execution_timeout': timedelta(hours=10),  # 10 hours
-    'on_failure_callback': slack_report,
+    'on_failure_callback': [failure_notification],
 }
 
 # now define the DAG

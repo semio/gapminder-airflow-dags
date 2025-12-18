@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import json
 import logging
 import os.path as osp
-from urllib.parse import urlencode, urljoin
 
-import requests
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.standard.sensors.external_task import ExternalTaskSensor
@@ -418,79 +415,3 @@ class NotifyWaffleServerOperator(BashOperator):
         super().__init__(
             bash_command=bash_command, params={"text": text}, *args, **kwargs
         )
-
-
-class SlackReportOperator:
-    """Send a message to Slack with default buttons.
-
-    This is not an Airflow operator - it's designed to be called directly
-    from callbacks (on_failure_callback, on_success_callback) where operator
-    execution context is not available.
-    """
-
-    def __init__(self, endpoint, status, airflow_baseurl, **kwargs):
-        """Initialize the Slack reporter.
-
-        Args:
-            endpoint: Slack webhook URL
-            status: Task status message (e.g., 'failed', 'new data')
-            airflow_baseurl: Base URL of the Airflow webserver for log links
-            **kwargs: Ignored (for compatibility with old interface)
-        """
-        self.endpoint = endpoint
-        self.status = status
-        self.airflow_baseurl = airflow_baseurl
-
-    def execute(self, context):
-        """Send the Slack message."""
-        dag_id = context["dag_run"].dag_id
-        task_id = context["ti"].task_id
-        ts = context["ts"]
-        dataset = context.get("target_dataset", None)
-
-        text = f"{dag_id}.{task_id}: {self.status}"
-        log_url = osp.join(self.airflow_baseurl, "log?")
-        log_url = log_url + urlencode(
-            {
-                "task_id": task_id,
-                "dag_id": dag_id,
-                "execution_date": ts,
-                "format": "json",
-            }
-        )
-
-        blocks = [
-            {"type": "section", "text": {"type": "mrkdwn", "text": text}},
-            {
-                "type": "actions",
-                "elements": [
-                    {
-                        "type": "button",
-                        "text": {"type": "plain_text", "text": "Show log"},
-                        "url": log_url,
-                    }
-                ],
-            },
-        ]
-
-        if dataset:
-            git_url = urljoin("https://github.com", dataset)
-            blocks[1]["elements"].append(
-                {
-                    "type": "button",
-                    "text": {"type": "plain_text", "text": "Github"},
-                    "url": git_url,
-                }
-            )
-
-        data = {"blocks": blocks}
-
-        log.info("Sending Slack message: %s", json.dumps(data))
-        response = requests.post(
-            self.endpoint,
-            json=data,
-            headers={"Content-Type": "application/json"},
-            timeout=30,
-        )
-        response.raise_for_status()
-        log.info("Slack message sent successfully")

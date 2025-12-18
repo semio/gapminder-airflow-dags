@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-"""{{ name }}"""
+"""target_dataset"""
 
 import os.path as osp
 from datetime import datetime, timedelta
-from functools import partial
 
-from airflow.hooks.base import BaseHook
+from airflow.providers.slack.notifications.slack_webhook import (
+    send_slack_webhook_notification,
+)
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.standard.operators.python import (
     BranchPythonOperator,
@@ -24,7 +25,6 @@ from ddf_operators import (
     GitResetAndGoMasterOperator,
     RunETLOperator,
     SetupVenvOperator,
-    SlackReportOperator,
     UpdateSourceOperator,
     ValidateDatasetOperator,
 )
@@ -40,9 +40,6 @@ from ddf_operators import (
 # variables
 datasets_dir = Variable.get("datasets_dir")
 airflow_home = Variable.get("airflow_home")
-# gcs_datasets = [x.strip() for x in Variable.get('with_production').split('\n')]
-endpoint = BaseHook.get_connection("slack_connection").password
-airflow_baseurl = BaseHook.get_connection("airflow_web").host
 
 target_dataset = "target_dataset"
 depends_on = {"dep_1": "manual", "dep_2": "recipe"}
@@ -51,16 +48,15 @@ logpath = osp.join(airflow_home, "validation-log")
 out_dir = osp.join(datasets_dir, target_dataset)
 dag_id = target_dataset.replace("/", "_")
 
-
-def slack_report(context, status):
-    reporter = SlackReportOperator(
-        endpoint=endpoint,
-        status=status,
-        airflow_baseurl=airflow_baseurl,
-    )
-    context["target_dataset"] = "target_dataset"
-    reporter.execute(context)
-
+# Slack notifications
+failure_notification = send_slack_webhook_notification(
+    slack_webhook_conn_id="slack_webhook",
+    text=f"{dag_id}.{{{{ ti.task_id }}}}: failed\nGithub: https://github.com/{target_dataset}",
+)
+success_notification = send_slack_webhook_notification(
+    slack_webhook_conn_id="slack_webhook",
+    text=f"{dag_id}.{{{{ ti.task_id }}}}: new data\nGithub: https://github.com/{target_dataset}",
+)
 
 default_args = {
     "owner": "airflow",
@@ -74,7 +70,7 @@ default_args = {
     "poke_interval": 60 * 10,  # 10 minutes
     "execution_timeout": timedelta(hours=10),  # 10 hours
     "weight_rule": "absolute",
-    "on_failure_callback": partial(slack_report, status="failed"),
+    "on_failure_callback": [failure_notification],
 }
 
 # now define the DAG
@@ -126,14 +122,11 @@ with DAG(dag_id, default_args=default_args, schedule=schedule) as dag:
         task_id="check_new_commit", python_callable=check_new_commit
     )
 
-    def git_push_callback(context):
-        slack_report(context, status="new data")
-
     git_push_task = GitPushOperator(
         task_id="git_push",
         pool="etl",
         dataset=out_dir,
-        on_success_callback=git_push_callback,
+        on_success_callback=[success_notification],
     )
 
     # reseting the branch in case of anything failed
