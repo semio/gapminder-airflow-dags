@@ -61,7 +61,6 @@ Key operators:
 - `UpdateSourceOperator` - Runs update_source.py if present
 - `GenerateDatapackageOperator` - Generates datapackage.json
 - `ValidateDatasetOperator` - Validates DDF dataset
-- `SlackReportOperator` - Reports task status to Slack
 
 ## Cross-DAG Dependencies
 
