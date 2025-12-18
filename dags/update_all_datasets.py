@@ -24,8 +24,9 @@ datasets_dir = Variable.get("datasets_dir")
 airflow_home = Variable.get("airflow_home")
 gcs_datasets = [x.strip() for x in Variable.get("with_production").split("\n")]
 auto_datasets = [x.strip() for x in Variable.get("automatic_datasets").split("\n")]
-auto_ws_datasets = [x.strip() for x in Variable.get("automatic_ws_datasets").split("\n")]
-check_source_datasets = [x.strip() for x in Variable.get("check_source_datasets").split("\n")]
+check_source_datasets = [
+    x.strip() for x in Variable.get("check_source_datasets").split("\n")
+]
 custom_schedule = Variable.get("custom_schedule", deserialize_json=True)
 
 gitpull_template = """\
@@ -152,7 +153,8 @@ def add_remove_datasets():
 def check_etl_type():
     current_datasets = os.listdir(osp.join(datasets_dir, "open-numbers"))
     datasets_types = {
-        "open-numbers/" + k: list(_get_dataset_type("open-numbers/" + k)) for k in current_datasets
+        "open-numbers/" + k: list(_get_dataset_type("open-numbers/" + k))
+        for k in current_datasets
     }
 
     return {"current_datasets": datasets_types}
@@ -212,18 +214,14 @@ def refresh_dags(current_datasets, datasets_to_remove):
 
         if etl_type == "recipe":
             now = datetime.utcnow() - timedelta(days=1)
-            if dataset in auto_ws_datasets:
-                template = env.get_template("etl_recipe_auto_ws.py")
-            elif dataset in auto_datasets:
+            if dataset in auto_datasets:
                 template = env.get_template("etl_recipe_auto.py")
             else:
                 template = env.get_template("etl_recipe.py")
             p = 100 - len(dependencies)  # The more dependencies, the less priority
         elif etl_type == "python":
             now = datetime.utcnow() - timedelta(days=7)
-            if dataset in auto_ws_datasets:
-                template = env.get_template("etl_recipe_auto_ws.py")
-            elif dataset in auto_datasets:
+            if dataset in auto_datasets:
                 template = env.get_template("etl_recipe_auto.py")
             elif dataset in check_source_datasets:
                 template = env.get_template("check_source_only.py")
@@ -366,7 +364,14 @@ def update_all_datasets():
         trigger_rule="all_done",
     )
 
-    (review_result >> git_pull >> etl_type_result >> remove_dags >> refresh >> git_checkout)
+    (
+        review_result
+        >> git_pull
+        >> etl_type_result
+        >> remove_dags
+        >> refresh
+        >> git_checkout
+    )
 
 
 update_all_datasets()
