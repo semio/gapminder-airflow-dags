@@ -305,7 +305,7 @@ set -eu
 
 cd {osp.join(airflow_home, "dags", "datasets")}
 
-rm ./*.py
+rm -f ./*.py || true
 
 """
 
