@@ -3,7 +3,7 @@
 """{{ name }}"""
 
 import os.path as osp
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from airflow.hooks.base import BaseHook
 from airflow.providers.standard.operators.python import PythonOperator
