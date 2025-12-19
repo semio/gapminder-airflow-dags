@@ -40,6 +40,7 @@ from ddf_operators import (
 # variables
 datasets_dir = Variable.get("datasets_dir")
 airflow_home = Variable.get("airflow_home")
+airflow_baseurl = Variable.get("airflow_baseurl")
 
 target_dataset = "target_dataset"
 depends_on = {"dep_1": "manual", "dep_2": "recipe"}
@@ -49,13 +50,14 @@ out_dir = osp.join(datasets_dir, target_dataset)
 dag_id = target_dataset.replace("/", "_")
 
 # Slack notifications
+log_url = f"{airflow_baseurl}/dags/{dag_id}/runs/{{{{ dag_run.run_id }}}}/tasks/{{{{ ti.task_id }}}}"
 failure_notification = send_slack_webhook_notification(
     slack_webhook_conn_id="slack_webhook",
-    text=f"{dag_id}.{{{{ ti.task_id }}}}: failed\nGithub: https://github.com/{target_dataset}",
+    text=f"{dag_id}.{{{{ ti.task_id }}}}: failed\nGithub: https://github.com/{target_dataset}\nLogs: {log_url}",
 )
 success_notification = send_slack_webhook_notification(
     slack_webhook_conn_id="slack_webhook",
-    text=f"{dag_id}.{{{{ ti.task_id }}}}: new data\nGithub: https://github.com/{target_dataset}",
+    text=f"{dag_id}.{{{{ ti.task_id }}}}: new data\nGithub: https://github.com/{target_dataset}\nLogs: {log_url}",
 )
 
 default_args = {

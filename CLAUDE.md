@@ -69,6 +69,7 @@ DAGs emit XCom `last_task_run_time` at the start of each run. `DependencyDataset
 ## Required Airflow Variables
 
 - `airflow_home` - Path to AIRFLOW_HOME
+- `airflow_baseurl` - Base URL of the Airflow webserver (for Slack notification links)
 - `datasets_dir` - Path where datasets are stored
 - `with_production` - Newline-separated list of datasets with production DAGs
 - `automatic_datasets` - Newline-separated list of auto-push datasets

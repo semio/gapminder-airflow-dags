@@ -22,6 +22,7 @@ target_dataset = '{{ name }}'
 
 datasets_dir = Variable.get('datasets_dir')
 airflow_home = Variable.get('airflow_home')
+airflow_baseurl = Variable.get('airflow_baseurl')
 
 logpath = osp.join(airflow_home, 'validation-log')
 out_dir = osp.join(datasets_dir, target_dataset)
@@ -29,9 +30,10 @@ dag_id = target_dataset.replace('/', '_')
 
 # Slack notifications
 {% raw %}
+log_url = f'{airflow_baseurl}/dags/{dag_id}/runs/{{{{ dag_run.run_id }}}}/tasks/{{{{ ti.task_id }}}}'
 failure_notification = send_slack_webhook_notification(
     slack_webhook_conn_id='slack_webhook',
-    text=f'{dag_id}.{{{{ ti.task_id }}}}: failed\nGithub: https://github.com/{target_dataset}',
+    text=f'{dag_id}.{{{{ ti.task_id }}}}: failed\nGithub: https://github.com/{target_dataset}\nLogs: {log_url}',
 )
 {% endraw %}
 
