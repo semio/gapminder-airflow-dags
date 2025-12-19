@@ -27,8 +27,9 @@ class SetupVenvOperator(BashOperator):
         set -eu
         cd {{ params.dataset }}/etl
 
-        # Create venv using uv
+        # Create venv using uv and activate it
         uv venv .venv
+        source .venv/bin/activate
 
         # Install dependencies
         if [ -f requirements.txt ]; then
