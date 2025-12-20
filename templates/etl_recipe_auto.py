@@ -22,7 +22,6 @@ from ddf_operators import (
     RunETLOperator,
     SetupVenvOperator,
     UpdateSourceOperator,
-    ValidateDatasetOperator,
 )
 
 # steps:
@@ -30,20 +29,17 @@ from ddf_operators import (
 # 2. merge from develop branch
 # 3. run update_source.py
 # 4. run etl.py
-# 5. generate datapackage
-# 6. validate-ddf
-# 7. if there are updates, push
+# 5. generate datapackage (also validates)
+# 6. if there are updates, push
 
 
 # variables
 datasets_dir = Variable.get('datasets_dir')
-airflow_home = Variable.get('airflow_home')
 airflow_baseurl = Variable.get('airflow_baseurl')
 
 target_dataset = '{{ name }}'
 depends_on = {{ dependencies }}
 
-logpath = osp.join(airflow_home, 'validation-log')
 out_dir = osp.join(datasets_dir, target_dataset)
 dag_id = target_dataset.replace('/', '_')
 
@@ -106,12 +102,6 @@ with DAG(dag_id, default_args=default_args, schedule=schedule) as dag:
         task_id='generate_datapackage',
         pool='etl',
         dataset=out_dir,
-    )
-    validate_ddf = ValidateDatasetOperator(
-        task_id='validate',
-        pool='etl',
-        dataset=out_dir,
-        logpath=logpath,
     )
     git_commit_task = GitCommitOperator(task_id='git_commit', pool='etl', dataset=out_dir)
 
@@ -190,7 +180,6 @@ with DAG(dag_id, default_args=default_args, schedule=schedule) as dag:
         >> source_update_task
         >> recipe_task
         >> datapackage_task
-        >> validate_ddf
         >> git_commit_task
     )
 

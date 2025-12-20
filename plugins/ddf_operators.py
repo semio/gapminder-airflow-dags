@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import os.path as osp
 
 from airflow.providers.standard.operators.bash import BashOperator
-from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.standard.sensors.external_task import ExternalTaskSensor
 from airflow.sdk import Variable
-
-from ddf_utils.io import dump_json
-from ddf_utils.package import get_datapackage
-
 
 log = logging.getLogger(__name__)
 
@@ -48,13 +42,34 @@ class SetupVenvOperator(BashOperator):
         )
 
 
-class GenerateDatapackageOperator(PythonOperator):
-    def __init__(self, dataset, *args, **kwargs):
-        def _gen_dp(d):
-            dp = get_datapackage(d, update=True)
-            dump_json(osp.join(dataset, "datapackage.json"), dp)
+class GenerateDatapackageOperator(BashOperator):
+    """Generate datapackage.json and validate the dataset using validate-ddf-ng.
 
-        super().__init__(python_callable=_gen_dp, op_args=[dataset], *args, **kwargs)
+    Uses the -p flag to generate datapackage.json while validating.
+    """
+
+    def __init__(self, dataset, *args, **kwargs):
+        bash_command = """\
+        export NODE_OPTIONS="--max-old-space-size=7000"
+        cd {{ params.dataset }}
+        validate-ddf-ng -p --no-warning ./
+        if [ $? -eq 0 ]
+        then
+            sleep 2
+            echo "validation and datapackage generation succeed."
+            exit 0
+        else
+            sleep 2
+            echo "validation failed."
+            exit 1
+        fi
+        """
+        super().__init__(
+            bash_command=bash_command,
+            params={"dataset": dataset},
+            *args,
+            **kwargs,
+        )
 
 
 class RunETLOperator(BashOperator):
@@ -75,7 +90,9 @@ class RunETLOperator(BashOperator):
         super().__init__(
             bash_command=bash_command,
             params={"dataset": dataset, "datasets_dir": Variable.get("datasets_dir")},
-            env={"GSPREAD_PANDAS_CONFIG_DIR": Variable.get("GSPREAD_PANDAS_CONFIG_DIR")},
+            env={
+                "GSPREAD_PANDAS_CONFIG_DIR": Variable.get("GSPREAD_PANDAS_CONFIG_DIR")
+            },
             *args,
             **kwargs,
         )
@@ -101,7 +118,9 @@ class UpdateSourceOperator(BashOperator):
         super().__init__(
             bash_command=bash_command,
             params={"dataset": dataset, "datasets_dir": Variable.get("datasets_dir")},
-            env={"GSPREAD_PANDAS_CONFIG_DIR": Variable.get("GSPREAD_PANDAS_CONFIG_DIR")},
+            env={
+                "GSPREAD_PANDAS_CONFIG_DIR": Variable.get("GSPREAD_PANDAS_CONFIG_DIR")
+            },
             *args,
             **kwargs,
         )
@@ -130,7 +149,9 @@ class GitPullOperator(BashOperator):
         git pull
         git submodule update --merge
         """
-        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs
+        )
 
 
 class GitMergeOperator(BashOperator):
@@ -208,7 +229,9 @@ class GitCommitOperator(BashOperator):
             fi
         fi
         """
-        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs
+        )
 
 
 class GitResetOperator(BashOperator):
@@ -220,7 +243,9 @@ class GitResetOperator(BashOperator):
         git reset --hard $COMMIT
         git clean -dfx
         """
-        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs
+        )
 
 
 class GitResetAndGoMasterOperator(BashOperator):
@@ -244,7 +269,9 @@ class GitResetAndGoMasterOperator(BashOperator):
         git clean -dfx
         git checkout master
         """
-        super().__init__(bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command, params={"dataset": dataset}, *args, **kwargs
+        )
 
 
 class ValidateDatasetOperator(BashOperator):
@@ -403,4 +430,6 @@ class NotifyWaffleServerOperator(BashOperator):
         curl -d 'token=foo' -d 'command=/bwload' --data-urlencode 'text={{ params.text }}' http://35.228.158.102/slack/
         """
 
-        super().__init__(bash_command=bash_command, params={"text": text}, *args, **kwargs)
+        super().__init__(
+            bash_command=bash_command, params={"text": text}, *args, **kwargs
+        )
