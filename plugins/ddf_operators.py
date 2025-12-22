@@ -525,9 +525,13 @@ class DependencyDatasetSensor(ExternalTaskSensor):
             dag_id=self._external_dag_id,
             task_ids=self._xcom_task_id,
             key=self._xcom_key,
+            include_prior_dates=True,
         )
 
         if last_run_time:
+            log.info(
+                f"Found XCom '{self._xcom_key}' for {self._external_dag_id}: {last_run_time}"
+            )
             return [last_run_time]
 
         log.warning(
