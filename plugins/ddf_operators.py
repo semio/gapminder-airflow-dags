@@ -480,12 +480,13 @@ class DependencyDatasetSensor(ExternalTaskSensor):
     """Sensor that waits for the most recent run of an external task to succeed.
 
     This sensor extends ExternalTaskSensor and uses XCom to find the most recent
-    task run. The dependency task must push an XCom with key 'last_task_run_time'
-    containing its logical_date at the start of each run.
+    DAG run. The dependency DAG must have an emit_last_task_run_time task that
+    pushes an XCom with key 'last_task_run_time' containing its logical_date.
 
     Args:
-        external_dag_id: The DAG ID of the external task to wait for
-        external_task_id: The task ID of the external task to wait for
+        external_dag_id: The DAG ID of the external DAG to wait for
+        external_task_id: The task ID to check the status of (e.g., 'cleanup', 'validate')
+        xcom_task_id: The task that pushes the XCom (default: 'emit_last_task_run_time')
         xcom_key: The XCom key to read (default: 'last_task_run_time')
         allowed_states: States considered as successful (default: ['success'])
         failed_states: States considered as failed (default: ['failed'])
@@ -496,6 +497,7 @@ class DependencyDatasetSensor(ExternalTaskSensor):
         self,
         external_dag_id: str,
         external_task_id: str,
+        xcom_task_id: str = "emit_last_task_run_time",
         xcom_key: str = "last_task_run_time",
         allowed_states: list[str] | None = None,
         failed_states: list[str] | None = None,
@@ -503,7 +505,7 @@ class DependencyDatasetSensor(ExternalTaskSensor):
         **kwargs,
     ):
         self._external_dag_id = external_dag_id
-        self._external_task_id = external_task_id
+        self._xcom_task_id = xcom_task_id
         self._xcom_key = xcom_key
 
         super().__init__(
@@ -517,11 +519,11 @@ class DependencyDatasetSensor(ExternalTaskSensor):
         )
 
     def _get_execution_date_from_xcom(self, logical_date, **context):
-        """Get the execution date from XCom pushed by the dependency task."""
+        """Get the execution date from XCom pushed by emit_last_task_run_time."""
         ti = context["ti"]
         last_run_time = ti.xcom_pull(
             dag_id=self._external_dag_id,
-            task_ids=self._external_task_id,
+            task_ids=self._xcom_task_id,
             key=self._xcom_key,
         )
 
@@ -529,7 +531,7 @@ class DependencyDatasetSensor(ExternalTaskSensor):
             return [last_run_time]
 
         log.warning(
-            f"No XCom '{self._xcom_key}' found for {self._external_dag_id}.{self._external_task_id}"
+            f"No XCom '{self._xcom_key}' found for {self._external_dag_id}.{self._xcom_task_id}"
         )
         return []
 
