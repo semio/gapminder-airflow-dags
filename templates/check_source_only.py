@@ -98,21 +98,22 @@ with DAG(dag_id, default_args=default_args, schedule=schedule) as dag:
 
     # set dependencies with TaskGroup
     if len(depends_on) > 0:
-        with TaskGroup('dependency_check') as dependency_group:
+        with TaskGroup(
+            'dependency_check',
+            on_failure_callback=dependency_failure_callback,
+        ) as dependency_group:
             for dep, dep_etl_type in depends_on.items():
                 if dep_etl_type == 'manual':
                     DependencyDatasetSensor(
                         task_id='wait_for_{}'.format(dep).replace('/', '_'),
                         external_dag_id=dep.replace('/', '_'),
                         external_task_id='validate',
-                        on_failure_callback=dependency_failure_callback,
                     )
                 else:
                     DependencyDatasetSensor(
                         task_id='wait_for_{}'.format(dep).replace('/', '_'),
                         external_dag_id=dep.replace('/', '_'),
                         external_task_id='cleanup',
-                        on_failure_callback=dependency_failure_callback,
                     )
 
         emit_run_time >> dependency_group >> checkout_task
