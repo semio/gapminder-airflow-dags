@@ -521,23 +521,28 @@ class DependencyDatasetSensor(ExternalTaskSensor):
     def _get_execution_date_from_xcom(self, logical_date, **context):
         """Get the execution date from XCom pushed by emit_last_task_run_time."""
         ti = context["ti"]
-        last_run_time = ti.xcom_pull(
+        last_run_times = ti.xcom_pull(
             dag_id=self._external_dag_id,
             task_ids=self._xcom_task_id,
             key=self._xcom_key,
             include_prior_dates=True,
         )
 
-        if last_run_time:
+        if last_run_times:
+            # include_prior_dates returns a list, get the most recent one
+            if isinstance(last_run_times, list):
+                latest = max(last_run_times)
+            else:
+                latest = last_run_times
             log.info(
-                f"Found XCom '{self._xcom_key}' for {self._external_dag_id}: {last_run_time}"
+                f"Found XCom '{self._xcom_key}' for {self._external_dag_id}: {latest}"
             )
-            return [last_run_time]
+            return latest
 
         log.warning(
             f"No XCom '{self._xcom_key}' found for {self._external_dag_id}.{self._xcom_task_id}"
         )
-        return []
+        return None
 
 
 class NotifyWaffleServerOperator(BashOperator):
