@@ -95,8 +95,12 @@ with DAG(dag_id, default_args=default_args, schedule=schedule) as dag:
     )
 
     # set dependencies with TaskGroup
+    # disable failure callback - dependency DAG sends its own notification
     if len(depends_on) > 0:
-        with TaskGroup('dependency_check') as dependency_group:
+        with TaskGroup(
+            'dependency_check',
+            default_args={'on_failure_callback': None},
+        ) as dependency_group:
             for dep, dep_etl_type in depends_on.items():
                 if dep_etl_type == 'manual':
                     DependencyDatasetSensor(
