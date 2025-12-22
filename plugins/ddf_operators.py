@@ -2,7 +2,6 @@
 
 import logging
 
-from airflow.providers.slack.hooks.slack_webhook import SlackWebhookHook
 from airflow.providers.slack.notifications.slack_webhook import (
     send_slack_webhook_notification,
 )
@@ -82,54 +81,6 @@ def create_success_notification(dag_id: str, github_url: str, log_url_template: 
             log_url=log_url_template,
         ),
     )
-
-
-def create_dependency_failure_callback(
-    dag_id: str, github_url: str, airflow_baseurl: str
-):
-    """Create a callback for dependency failures that sends only one notification per DAG run.
-
-    Uses XCom to track if a notification was already sent for this DAG run,
-    preventing duplicate notifications when multiple dependencies fail.
-
-    Args:
-        dag_id: The DAG ID for the notification message
-        github_url: URL to the GitHub repository
-        airflow_baseurl: Base URL of the Airflow webserver
-
-    Returns:
-        A callback function suitable for on_failure_callback
-    """
-
-    def _callback(context):
-        ti = context["ti"]
-        dag_run = context["dag_run"]
-
-        # Check if we already sent a notification for this DAG run
-        notified = ti.xcom_pull(key="dependency_failure_notified", dag_id=dag_id)
-        if notified:
-            return
-
-        # Mark as notified
-        ti.xcom_push(key="dependency_failure_notified", value=True)
-
-        # Build log URL
-        log_url = (
-            f"{airflow_baseurl}/dags/{dag_id}/runs/{dag_run.run_id}/tasks/{ti.task_id}"
-        )
-
-        # Send notification
-        hook = SlackWebhookHook(slack_webhook_conn_id="slack_webhook")
-        hook.send(
-            text=f"{dag_id}: dependency check failed",
-            blocks=_create_slack_blocks(
-                message=f"*{dag_id}*: dependency check failed :x:\nFailed task: {ti.task_id}",
-                github_url=github_url,
-                log_url=log_url,
-            ),
-        )
-
-    return _callback
 
 
 class SetupVenvOperator(BashOperator):

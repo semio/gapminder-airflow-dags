@@ -20,7 +20,6 @@ from ddf_operators import (
     RunETLOperator,
     SetupVenvOperator,
     UpdateSourceOperator,
-    create_dependency_failure_callback,
     create_failure_notification,
     create_success_notification,
 )
@@ -49,7 +48,6 @@ log_url = f'{airflow_baseurl}/dags/{dag_id}/runs/{{{{ dag_run.run_id }}}}/tasks/
 {% endraw %}
 failure_notification = create_failure_notification(dag_id, github_url, log_url)
 success_notification = create_success_notification(dag_id, github_url, log_url)
-dependency_failure_callback = create_dependency_failure_callback(dag_id, github_url, airflow_baseurl)
 
 default_args = {
     'owner': 'airflow',
@@ -131,10 +129,7 @@ with DAG(dag_id, default_args=default_args, schedule=schedule) as dag:
 
     # set dependencies with TaskGroup
     if len(depends_on) > 0:
-        with TaskGroup(
-            'dependency_check',
-            on_failure_callback=dependency_failure_callback,
-        ) as dependency_group:
+        with TaskGroup('dependency_check') as dependency_group:
             for dep, dep_etl_type in depends_on.items():
                 if dep_etl_type == 'manual':
                     DependencyDatasetSensor(
