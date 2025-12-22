@@ -5,13 +5,13 @@
 import os.path as osp
 from datetime import datetime, timedelta
 
-from airflow.providers.slack.notifications.slack_webhook import send_slack_webhook_notification
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.sdk import DAG, Variable
 
 from ddf_operators import (
     GitPullOperator,
     ValidateDatasetOperator,
+    create_failure_notification,
 )
 
 # steps:
@@ -29,13 +29,11 @@ out_dir = osp.join(datasets_dir, target_dataset)
 dag_id = target_dataset.replace('/', '_')
 
 # Slack notifications
+github_url = f'https://github.com/{target_dataset}'
 {% raw %}
 log_url = f'{airflow_baseurl}/dags/{dag_id}/runs/{{{{ dag_run.run_id }}}}/tasks/{{{{ ti.task_id }}}}'
-failure_notification = send_slack_webhook_notification(
-    slack_webhook_conn_id='slack_webhook',
-    text=f'{dag_id}.{{{{ ti.task_id }}}}: failed\nGithub: https://github.com/{target_dataset}\nLogs: {log_url}',
-)
 {% endraw %}
+failure_notification = create_failure_notification(dag_id, github_url, log_url)
 
 default_args = {
     'owner': 'airflow',
