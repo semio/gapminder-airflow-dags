@@ -1,11 +1,21 @@
-The systemd files in this directory are tested on RedHat based systems. Copy (or link) them to /usr/lib/systemd/system
-and copy the airflow.conf to /etc/tmpfiles.d/ or /usr/lib/tmpfiles.d/. Copying airflow.conf ensures /run/airflow is
-created with the right owner and permissions (0755 airflow airflow)
+These systemd files are configured for Ubuntu with the following setup:
+- User: airflow
+- Venv: /home/airflow/venv/
+- Environment file: /etc/default/airflow
 
-You can then start the different servers by using systemctl start <service>. Enabling services can be done by issuing
- systemctl enable <service>.
+Installation:
+1. Copy (or link) the .service files to /etc/systemd/system/
+2. Copy airflow.conf to /etc/tmpfiles.d/ (ensures /run/airflow is created with correct permissions)
+3. Copy the "airflow" file to /etc/default/airflow and adjust as needed
 
-By default the environment configuration points to /etc/sysconfig/airflow . You can copy the "airflow" file in this
-directory and adjust it to your liking.
+Usage:
+- Start services: systemctl start <service>
+- Enable on boot: systemctl enable <service>
+- Check status: systemctl status <service>
 
-With some minor changes they probably work on other systemd systems.
+Common services:
+- airflow-webserver.service
+- airflow-scheduler.service
+- airflow-triggerer.service (for deferrable operators)
+
+Based on Apache Airflow systemd scripts from commit 53ea85e234b4b4dee6c51e1d79edd84c544bee79

@@ -18,15 +18,15 @@
 
 [Unit]
 Description=Airflow Triggerer
-After=network.target postgresql.service mysql.service redis.service rabbitmq-server.service
-Wants=postgresql.service mysql.service redis.service rabbitmq-server.service
+After=network.target postgresql.service
+Wants=postgresql.service
 
 [Service]
-EnvironmentFile=/etc/sysconfig/airflow
+EnvironmentFile=/etc/default/airflow
 User=airflow
 Group=airflow
 Type=simple
-ExecStart=/bin/bash -c 'source /home/airflow/airflow_venv/bin/activate && airflow triggerer'
+ExecStart=/bin/bash -c 'source /home/airflow/venv/bin/activate && airflow triggerer'
 Restart=always
 RestartSec=5s
 

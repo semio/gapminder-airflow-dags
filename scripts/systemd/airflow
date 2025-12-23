@@ -16,7 +16,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# This file is the environment file for Airflow. Put this file in /etc/sysconfig/airflow per default
+# This file is the environment file for Airflow. Put this file in /etc/default/airflow per default
 # configuration of the systemd unit files.
 #
 # AIRFLOW_CONFIG=
