@@ -20,8 +20,10 @@ This repository contains Apache Airflow DAGs for automatically building and upda
 │   ├── check_source_only.py # Source checking only (no ETL)
 │   ├── manual_update.py     # Manually maintained datasets
 │   └── etl_recipe_variable_filled.py  # Reference with filled values
-└── plugins/                 # Custom Airflow operators
-    └── ddf_operators.py     # DDF-specific operators and sensors
+├── plugins/                 # Custom Airflow operators
+│   └── ddf_operators.py     # DDF-specific operators and sensors
+└── scripts/
+    └── systemd/             # Systemd service files for Ubuntu deployment
 ```
 
 ## Airflow Version
@@ -59,8 +61,12 @@ Key operators:
 - `GitCheckoutOperator`, `GitResetOperator`, `GitResetAndGoMasterOperator`
 - `RunETLOperator` - Runs etl.py script
 - `UpdateSourceOperator` - Runs update_source.py if present
-- `GenerateDatapackageOperator` - Generates datapackage.json
-- `ValidateDatasetOperator` - Validates DDF dataset
+- `GenerateDatapackageOperator` - Validates and generates datapackage.json (uses `validate-ddf-ng -p`)
+- `ValidateDatasetOperator` - Validates DDF dataset (validation only, for manual_update template)
+
+Slack notification helpers:
+- `create_failure_notification()` - Creates failure notification with Block Kit buttons
+- `create_success_notification()` - Creates success notification with Block Kit buttons
 
 ## Cross-DAG Dependencies
 
