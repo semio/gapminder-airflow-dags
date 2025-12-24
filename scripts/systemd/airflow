@@ -30,4 +30,3 @@ AIRFLOW_HOME=/var/airflow
 # important variables to set
 DATASETS_DIR=/dataset/
 GSPREAD_PANDAS_CONFIG_DIR='/home/airflow/.config/gspread_pandas'
-# SLACK_ENDPOINT='TXXXXXXXX/...'
