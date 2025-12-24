@@ -16,5 +16,6 @@ Usage:
 
 Services:
 - airflow-api.service (web UI + API)
+- airflow-dag-processor.service (DAG file parsing)
 - airflow-scheduler.service
 - airflow-triggerer.service
