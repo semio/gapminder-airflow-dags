@@ -6,12 +6,7 @@ These systemd files are configured for Ubuntu with the following setup:
 Installation:
 1. Copy (or link) the .service files to /etc/systemd/system/
 2. Copy airflow.conf to /etc/tmpfiles.d/ (ensures /run/airflow is created with correct permissions)
-3. Configure environment variables (choose one):
-   - Put them in /etc/default/airflow (see "airflow" template file), OR
-   - Put them in /home/airflow/.profile (services use login shell to load it)
-
-The services use `bash -l` (login shell) which loads .profile automatically.
-This is useful for nvm-managed node or other user-specific PATH settings.
+3. Configure environment variables: Put them in /etc/default/airflow (see "airflow" template file)
 
 Usage:
 - Start services: systemctl start <service>
@@ -19,9 +14,7 @@ Usage:
 - Check status: systemctl status <service>
 - View logs: journalctl -u <service> -f
 
-Services (Airflow 3.x):
-- airflow-api.service (web UI + API, replaces webserver)
+Services:
+- airflow-api.service (web UI + API)
 - airflow-scheduler.service
-- airflow-triggerer.service (for deferrable operators)
-
-Based on Apache Airflow systemd scripts from commit 53ea85e234b4b4dee6c51e1d79edd84c544bee79
+- airflow-triggerer.service

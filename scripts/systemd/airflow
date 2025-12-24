@@ -22,17 +22,12 @@
 # Note: systemd services don't load .profile or .bashrc, so all required
 # environment variables must be set here.
 
-# Airflow home directory
-# AIRFLOW_HOME=/home/airflow/airflow
-
+# airflow configrations
+AIRFLOW_HOME=/var/airflow
 # Database connection (required)
 # AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://user:pass@localhost/airflow
 
-# Executor (default: SequentialExecutor)
-# AIRFLOW__CORE__EXECUTOR=LocalExecutor
-
-# API server settings (replaces webserver in Airflow 3.x)
-# AIRFLOW__API__BASE_URL=http://localhost:8080
-
-# Logging
-# AIRFLOW__LOGGING__BASE_LOG_FOLDER=/home/airflow/airflow/logs
+# important variables to set
+DATASETS_DIR=/dataset/
+GSPREAD_PANDAS_CONFIG_DIR='/home/airflow/.config/gspread_pandas'
+# SLACK_ENDPOINT='TXXXXXXXX/...'

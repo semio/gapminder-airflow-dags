@@ -26,7 +26,7 @@ EnvironmentFile=/etc/default/airflow
 User=airflow
 Group=airflow
 Type=simple
-ExecStart=/bin/bash -l -c 'source /home/airflow/venv/bin/activate && airflow triggerer'
+ExecStart=/bin/bash -c 'source /home/airflow/venv/bin/activate && airflow triggerer'
 Restart=always
 RestartSec=5s
 
