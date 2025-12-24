@@ -17,7 +17,7 @@
 # under the License.
 
 [Unit]
-Description=Airflow webserver daemon
+Description=Airflow API Server
 After=network.target postgresql.service
 Wants=postgresql.service
 
@@ -26,10 +26,9 @@ EnvironmentFile=/etc/default/airflow
 User=airflow
 Group=airflow
 Type=simple
-ExecStart=/bin/bash -c 'source /home/airflow/venv/bin/activate && airflow webserver --pid /run/airflow/webserver.pid'
-Restart=on-failure
+ExecStart=/bin/bash -c 'source /home/airflow/venv/bin/activate && airflow api-server'
+Restart=always
 RestartSec=5s
-PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
