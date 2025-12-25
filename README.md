@@ -4,8 +4,8 @@ An airflow DAG to automatically build/update open-numbers' repos.
 
 ## Setup in Airflow
 
-Put/Symlink the three folder in the repo to your `$AIRFLOW_HOME` to use
-the DAG.
+Put/Symlink the three folder (dags, plugins, templates) and the configuration file airflow.cfg 
+in the repo to your `$AIRFLOW_HOME` to use the DAGs. 
 
 You need to define following Vairables in Airflow admin UI before the
 DAGs can run:
@@ -13,7 +13,7 @@ DAGs can run:
 - `airflow_home`: should be same as your `$AIRFLOW_HOME` environment variable
 - `datasets_dir`: the path where the recipes/DAGs to find datasets
 
-you should also define a `etl` pool for etl related tasks. Set the
+You also need an `etl` pool for etl related tasks. Set the
 pool slot number to a reasonable value.
 
 ## Schedule
@@ -25,4 +25,3 @@ If you need to change the schedule, you should modify not only the
 `schedule_interval` in the update_all_datasets DAG, but also the
 `schedule_interval` in the DAG templates. The `execute_date_fn` in
 ExternalTaskSensor might need to change too.
-
