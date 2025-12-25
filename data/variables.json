@@ -1,0 +1,14 @@
+{
+  "airflow_baseurl": "http://airflow_host:8080",
+  "airflow_home": "/var/airflow",
+  "automatic_datasets": "open-numbers/ddf--semio--dag_test\r\nopen-numbers/ddf--world_bank--world_development_indicators\r\nopen-numbers/ddf--open_numbers--world_development_indicators\r\nopen-numbers/ddf--gapminder--life_expectancy\r\nopen-numbers/ddf--gapminder--child_mortality\r\nopen-numbers/ddf--gapminder--gdp_per_capita_cppp\r\nopen-numbers/ddf--gapminder--population_historic\r\nopen-numbers/ddf--gapminder--population \r\nopen-numbers/ddf--gapminder--fertility_rate\r\nopen-numbers/ddf--gapminder--gini\r\nopen-numbers/ddf--gapminder--systema_globalis\r\nopen-numbers/ddf--oxford--covid_government_response\r\nopen-numbers/ddf--ecdc--covid_19_geographic_distribution\r\nopen-numbers/ddf--unfao--faostat\r\nopen-numbers/ddf--ilo--ilostat\r\nopen-numbers/ddf--who--tb_burden_estimates\r\nopen-numbers/ddf--unpop--world_population_prospects\r\nopen-numbers/ddf--oecd--dac\r\nopen-numbers/ddf--owid--covid_19\r\nopen-numbers/ddf--open_numbers--owid_covid_19",
+  "automatic_ws_datasets": "open-numbers/ddf--open_numbers--owid_covid_19",
+  "automatic_ws_datasets_conf": "{\"open-numbers/ddf--open_numbers--owid_covid_19\": {\"branch\": \"master\", \"ws_dataset_id\": \"owid-covid-master\"}}",
+  "check_source_datasets": "open-numbers/ddf--ihme--death_cause_compact\r\n",
+  "custom_schedule": "{\"open-numbers/ddf--ecdc--covid_19_geographic_distribution\": \"0 1 * * 2\", \"open-numbers/ddf--open_numbers--covid_19_geographic_distribution\": \"20 1 * * 2\", \"open-numbers/ddf--open_numbers--covid_government_response\": \"20 1 * * 2\", \"open-numbers/ddf--owid--covid_19\": \"0 10 * * *\", \"open-numbers/ddf--oxford--covid_government_response\": \"0 1 * * 2\"}",
+  "datasets_dir": "/dataset",
+  "gcs_datasets": " open-numbers/ddf--gapminder--fasttrack",
+  "GSPREAD_PANDAS_CONFIG_DIR": "/home/airflow/.config/gspread_pandas/",
+  "max_log_age_in_days": "30",
+  "with_production": "open-numbers/ddf--gapminder--fasttrack"
+}
