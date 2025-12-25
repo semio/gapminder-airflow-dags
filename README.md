@@ -4,8 +4,8 @@ An airflow DAG to automatically build/update open-numbers' repos.
 
 ## Setup in Airflow
 
-Put/Symlink the three folder (dags, plugins, templates) and the configuration file airflow.cfg 
-in the repo to your `$AIRFLOW_HOME` to use the DAGs. 
+Put/Symlink the three folder (dags, plugins, templates) in the repo
+to your `$AIRFLOW_HOME` to use the DAGs. 
 
 You need to define following Vairables in Airflow admin UI before the
 DAGs can run:
