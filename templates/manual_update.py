@@ -3,9 +3,11 @@
 """{{ name }}"""
 
 import os.path as osp
+import subprocess
 from datetime import datetime, timedelta
 
-from airflow.providers.standard.operators.python import PythonOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
+from airflow.providers.standard.operators.python import BranchPythonOperator, PythonOperator
 from airflow.sdk import DAG, Variable
 
 from ddf_operators import (
@@ -15,7 +17,9 @@ from ddf_operators import (
 )
 
 # steps:
-# validate the dataset and done.
+# 1. Pull latest changes
+# 2. Check if there were git updates in the past 24 hours
+# 3. If yes, validate the dataset; otherwise skip
 
 # variables
 target_dataset = '{{ name }}'
@@ -61,12 +65,36 @@ with DAG(dag_id, default_args=default_args, schedule=schedule) as dag:
         logical_date = context['logical_date']
         ti.xcom_push(key='last_task_run_time', value=logical_date)
 
+    def check_recent_git_updates(**context):
+        """Check if there were git commits in the past 24 hours."""
+        result = subprocess.run(
+            ['git', 'log', '-1', '--format=%at'],
+            cwd=out_dir,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            # If we can't get git info, run validation to be safe
+            return 'validate'
+
+        last_commit_timestamp = int(result.stdout.strip())
+        yesterday_timestamp = int((datetime.now() - timedelta(days=1)).timestamp())
+
+        if last_commit_timestamp >= yesterday_timestamp:
+            return 'validate'
+        return 'skip_validation'
+
     emit_run_time = PythonOperator(
         task_id='emit_last_task_run_time',
         python_callable=emit_last_task_run_time,
     )
 
     git_pull = GitPullOperator(task_id='git_pull', dataset=out_dir)
+
+    check_updates = BranchPythonOperator(
+        task_id='check_recent_updates',
+        python_callable=check_recent_git_updates,
+    )
 
     validate_ddf = ValidateDatasetOperator(
         task_id='validate',
@@ -75,4 +103,6 @@ with DAG(dag_id, default_args=default_args, schedule=schedule) as dag:
         logpath=logpath,
     )
 
-    emit_run_time >> git_pull >> validate_ddf
+    skip_validation = EmptyOperator(task_id='skip_validation')
+
+    emit_run_time >> git_pull >> check_updates >> [validate_ddf, skip_validation]
