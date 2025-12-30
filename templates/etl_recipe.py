@@ -140,6 +140,7 @@ with DAG(dag_id, default_args=default_args, schedule=schedule) as dag:
                         task_id='wait_for_{}'.format(dep).replace('/', '_'),
                         external_dag_id=dep.replace('/', '_'),
                         external_task_id='validate',
+                        allowed_states=['success', 'skipped'],
                     )
                 else:
                     DependencyDatasetSensor(
