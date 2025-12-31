@@ -46,7 +46,7 @@ def _get_dataset_type(dataset):
     return out.stdout.decode("utf-8").split("\n")[-2].split(",")
 
 
-def _get_denpendencies(dataset, all_datasets, include_indirect=False):
+def _get_denpendencies(dataset, all_datasets, include_indirect=True):
     try:
         etl_type, fn = all_datasets[dataset]
     except KeyError:  # not open_numbers datasets
