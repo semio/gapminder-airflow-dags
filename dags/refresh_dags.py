@@ -170,6 +170,13 @@ rm -f ./*.py || true
 
 """
 
+REPARSE_DAGS_COMMAND = """\
+set -eu
+
+airflow dags reserialize
+
+"""
+
 
 @dag(
     dag_id="refresh_dags",
@@ -202,7 +209,12 @@ def refresh_dags_dag():
 
     refresh = refresh_dags_task(etl_type_result)
 
-    etl_type_result >> remove_dags >> refresh
+    reparse_dags = BashOperator(
+        task_id="reparse_dags",
+        bash_command=REPARSE_DAGS_COMMAND,
+    )
+
+    etl_type_result >> remove_dags >> refresh >> reparse_dags
 
 
 refresh_dags_dag()

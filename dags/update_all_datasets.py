@@ -309,6 +309,13 @@ rm -f ./*.py || true
 
 """
 
+REPARSE_DAGS_COMMAND = """\
+set -eu
+
+airflow dags reserialize
+
+"""
+
 
 @dag(
     dag_id="update_all_datasets",
@@ -355,6 +362,11 @@ def update_all_datasets():
 
     refresh = refresh_dags_task(etl_type_result, review_result)
 
+    reparse_dags = BashOperator(
+        task_id="reparse_dags",
+        bash_command=REPARSE_DAGS_COMMAND,
+    )
+
     git_checkout = BashOperator(
         task_id="checkout_master_branches",
         bash_command=git_checkmaster_template,
@@ -370,6 +382,7 @@ def update_all_datasets():
         >> etl_type_result
         >> remove_dags
         >> refresh
+        >> reparse_dags
         >> git_checkout
     )
 
