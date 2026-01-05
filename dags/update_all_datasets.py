@@ -380,10 +380,10 @@ def update_all_datasets():
         review_result
         >> git_pull
         >> etl_type_result
+        >> git_checkout
         >> remove_dags
         >> refresh
         >> reparse_dags
-        >> git_checkout
     )
 
 
