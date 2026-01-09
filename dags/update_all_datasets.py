@@ -169,7 +169,9 @@ def _get_dataset_type(dataset):
     if out.returncode != 0:
         logging.info("command did not return successfully. fall back to manual")
         return ["manual", ""]
-    return out.stdout.decode("utf-8").split("\n")[-2].split(",")
+    result = out.stdout.decode("utf-8").split("\n")[-2].split(",")
+    logging.info(f"result: {result}")
+    return result
 
 
 def _get_denpendencies(dataset, all_datasets, include_indirect=True):
