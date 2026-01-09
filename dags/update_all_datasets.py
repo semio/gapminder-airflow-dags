@@ -161,16 +161,23 @@ def check_etl_type():
 
 
 def _get_dataset_type(dataset):
-    logging.info(f"checking {dataset} ...")
     dataset_path = osp.join(datasets_dir, dataset)
     etl_dir = osp.join(dataset_path, "etl/scripts")
 
-    out = subprocess.run(["ddf", "etl_type", "-d", etl_dir], stdout=subprocess.PIPE)
+    out = subprocess.run(
+        ["ddf", "etl_type", "-d", etl_dir],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    logging.info(f"checking {dataset}: returncode={out.returncode}")
+    logging.info(f"stdout: {out.stdout.decode('utf-8')!r}")
+    logging.info(f"stderr: {out.stderr.decode('utf-8')!r}")
     if out.returncode != 0:
         logging.info("command did not return successfully. fall back to manual")
-        return ["manual", ""]
-    result = out.stdout.decode("utf-8").split("\n")[-2].split(",")
-    logging.info(f"result: {result}")
+        result = ["manual", ""]
+    else:
+        result = out.stdout.decode("utf-8").split("\n")[-2].split(",")
+    logging.info(f"result for {dataset}: {result}")
     return result
 
 
