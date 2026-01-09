@@ -161,6 +161,7 @@ def check_etl_type():
 
 
 def _get_dataset_type(dataset):
+    logging.info(f"checking {dataset} ...")
     dataset_path = osp.join(datasets_dir, dataset)
     etl_dir = osp.join(dataset_path, "etl/scripts")
 
