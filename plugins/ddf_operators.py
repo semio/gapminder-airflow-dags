@@ -283,7 +283,8 @@ class GitCommitOperator(BashOperator):
         cd {{ params.dataset }}
         # Exclude .venv from git status check
         if [[ $(git status -s -- ':!etl/.venv' | grep -e '^[? ][?D]' | head -c1 | wc -c) -ne 0 ]]; then
-            git add . ':!etl/.venv'
+            git add .
+            git reset HEAD -- etl/.venv 2>/dev/null || true
             git commit -m "auto generated dataset"
             echo "git updated"
         else
