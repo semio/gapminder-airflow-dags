@@ -117,7 +117,7 @@ class SetupVenvOperator(BashOperator):
 
 
 class GenerateDatapackageOperator(BashOperator):
-    """Generate datapackage.json and validate the dataset using validate-ddf-ng.
+    """Generate datapackage.json and validate the dataset using @gapminder/validate-ddf.
 
     Uses the -p flag to generate datapackage.json while validating.
     """
@@ -126,7 +126,7 @@ class GenerateDatapackageOperator(BashOperator):
         bash_command = """\
         export NODE_OPTIONS="--max-old-space-size=7000"
         cd {{ params.dataset }}
-        validate-ddf-ng -p --no-warning ./
+        validate-ddf -p --no-warning ./
         if [ $? -eq 0 ]
         then
             sleep 2
@@ -354,7 +354,7 @@ class ValidateDatasetOperator(BashOperator):
         bash_command = """\
         export NODE_OPTIONS="--max-old-space-size=7000"
         cd {{ params.dataset }}
-        validate-ddf-ng --no-warning ./
+        validate-ddf --no-warning ./
         if [ $? -eq 0 ]
         then
             sleep 2

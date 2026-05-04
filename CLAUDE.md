@@ -61,7 +61,7 @@ Key operators:
 - `GitCheckoutOperator`, `GitResetOperator`, `GitResetAndGoMasterOperator`
 - `RunETLOperator` - Runs etl.py script
 - `UpdateSourceOperator` - Runs update_source.py if present
-- `GenerateDatapackageOperator` - Validates and generates datapackage.json (uses `validate-ddf-ng -p`)
+- `GenerateDatapackageOperator` - Validates and generates datapackage.json (uses `validate-ddf -p`)
 - `ValidateDatasetOperator` - Validates DDF dataset (validation only, for manual_update template)
 
 Slack notification helpers:
