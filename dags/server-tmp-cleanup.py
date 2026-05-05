@@ -102,5 +102,10 @@ def server_tmp_cleanup():
             )
             i += 1
 
+    BashOperator(
+        task_id="uv_cache_clean",
+        bash_command="uv cache clean",
+    )
+
 
 server_tmp_cleanup()
